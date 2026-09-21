@@ -1,0 +1,27 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wdl-bg" x1="0" y1="0" x2="400" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0f5132"/>
+      <stop offset="1" stop-color="#146c43"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" rx="24" fill="url(#wdl-bg)"/>
+  <circle cx="60" cy="60" r="80" fill="#ffffff" opacity="0.05"/>
+  <g font-family="system-ui, sans-serif" font-weight="900" font-size="34" fill="#ffffff" text-anchor="middle">
+    <!-- row 1 -->
+    <g transform="translate(110 90)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="#6aaa64"/><text x="0" y="12">W</text></g>
+    <g transform="translate(180 90)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="#c9b458"/><text x="0" y="12">O</text></g>
+    <g transform="translate(250 90)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="#3a3a3c"/><text x="0" y="12">R</text></g>
+    <g transform="translate(320 90)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="#3a3a3c"/><text x="0" y="12">D</text></g>
+    <!-- row 2 -->
+    <g transform="translate(110 165)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="#3a3a3c"/><text x="0" y="12">P</text></g>
+    <g transform="translate(180 165)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="#6aaa64"/><text x="0" y="12">L</text></g>
+    <g transform="translate(250 165)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="#c9b458"/><text x="0" y="12">A</text></g>
+    <g transform="translate(320 165)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="#6aaa64"/><text x="0" y="12">Y</text></g>
+    <!-- row 3 empty -->
+    <g transform="translate(110 240)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3"/></g>
+    <g transform="translate(180 240)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3"/></g>
+    <g transform="translate(250 240)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3"/></g>
+    <g transform="translate(320 240)"><rect x="-30" y="-30" width="60" height="60" rx="10" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3"/></g>
+  </g>
+</svg>

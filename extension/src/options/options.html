@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FLC — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>FLC Settings</h1>
+
+      <section class="section">
+        <h2>Appearance</h2>
+        <p class="hint">Applies to the extension popup and the on-page lookup panel.</p>
+        <div class="theme-toggle" role="group" aria-label="Choose theme">
+          <button type="button" data-theme-choice="light">☀️ Light</button>
+          <button type="button" data-theme-choice="dark">🌙 Dark</button>
+          <button type="button" data-theme-choice="system">💻 System</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>API domain</h2>
+        <p class="hint">
+          Enter a domain or full URL. The extension adds <code>https://</code> and
+          <code>/api</code> if missing.
+        </p>
+        <label>
+          API address
+          <input
+            id="api-base-url"
+            type="text"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="flc.nvnhan0810.com or https://flc.nvnhan0810.com/api"
+          />
+        </label>
+        <p id="api-preview" class="preview" hidden></p>
+        <div class="preset-row">
+          <button type="button" id="btn-api-production" class="secondary">Production</button>
+          <button type="button" id="btn-api-local" class="secondary">Local (8080)</button>
+          <button type="button" id="btn-api-reset" class="secondary">Default</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Notifications &amp; quiz</h2>
+        <label>
+          Quizzes per day (estimate)
+          <input id="quiz-per-day" type="number" min="1" max="12" />
+        </label>
+        <label>
+          Listening reminder check (minutes)
+          <input id="media-check-minutes" type="number" min="15" max="1440" />
+        </label>
+        <label class="checkbox">
+          <input id="notifications-enabled" type="checkbox" />
+          Enable notifications
+        </label>
+      </section>
+
+      <button type="button" id="btn-save">Save settings</button>
+      <p id="status" class="status" role="status"></p>
+    </main>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

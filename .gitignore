@@ -1,0 +1,12 @@
+/backend/vendor/
+/backend/node_modules/
+/backend/.env
+/backend/storage/*.key
+/backend/storage/logs/*
+/backend/storage/framework/cache/*
+/backend/storage/framework/sessions/*
+/backend/storage/framework/views/*
+/backend/database/database.sqlite
+/extension/node_modules/
+/extension/dist/
+.DS_Store

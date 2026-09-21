@@ -1,0 +1,91 @@
+/* Light tokens: popup/options (:root), selection overlay host (:host / #flc-selection-root). */
+:root,
+:host,
+#flc-selection-root {
+  --flc-primary: #4361ee;
+  --flc-primary-dark: #3a0ca3;
+  --flc-bg: #f4f6fb;
+  --flc-surface: #ffffff;
+  --flc-text: #1a1a2e;
+  --flc-text-secondary: #334155;
+  --flc-muted: #64748b;
+  --flc-border: #e2e8f0;
+  --flc-input-border: #cbd5e1;
+  --flc-tab-inactive: #edf2f7;
+  --flc-tab-text: #475569;
+  --flc-danger: #dc2626;
+  --flc-success-bg: #d1fae5;
+  --flc-success-text: #166534;
+  --flc-danger-bg: #fee2e2;
+  --flc-danger-text: #991b1b;
+  --flc-secondary-btn: #64748b;
+  --flc-secondary-btn-hover: #475569;
+  --flc-hint-bg: #f1f5f9;
+  --flc-notice-bg: #fef3c7;
+  --flc-notice-border: #fcd34d;
+  --flc-notice-text: #92400e;
+  --flc-shadow: rgba(15, 23, 42, 0.18);
+  --flc-shadow-soft: rgba(15, 23, 42, 0.06);
+  --flc-google-hover: #f8fafc;
+  --flc-spinner-track: #e2e8f0;
+  --flc-close-bg: #f1f5f9;
+  --flc-close-hover: #e2e8f0;
+  --flc-meaning-border: #f1f5f9;
+  --flc-badge-ready-bg: #dcfce7;
+  --flc-badge-ready-text: #166534;
+  --flc-primary-soft: rgba(67, 97, 238, 0.55);
+  --flc-primary-soft-strong: rgba(67, 97, 238, 0.65);
+  --flc-primary-tint: rgba(67, 97, 238, 0.15);
+  --flc-color-scheme: light;
+}
+
+html[data-theme='dark'],
+:host([data-theme='dark']),
+#flc-selection-root[data-theme='dark'] {
+  color-scheme: dark;
+  --flc-primary: #6b8aff;
+  --flc-primary-dark: #5a6fd6;
+  --flc-bg: #0f1419;
+  --flc-surface: #1a2332;
+  --flc-text: #e8eaed;
+  --flc-text-secondary: #cbd5e1;
+  --flc-muted: #9aa0a6;
+  --flc-border: #2d3748;
+  --flc-input-border: #3d4f66;
+  --flc-tab-inactive: #243044;
+  --flc-tab-text: #9aa0a6;
+  --flc-danger: #f87171;
+  --flc-success-bg: #14532d;
+  --flc-success-text: #86efac;
+  --flc-danger-bg: #7f1d1d;
+  --flc-danger-text: #fecaca;
+  --flc-secondary-btn: #475569;
+  --flc-secondary-btn-hover: #64748b;
+  --flc-hint-bg: #243044;
+  --flc-notice-bg: #422006;
+  --flc-notice-border: #b45309;
+  --flc-notice-text: #fcd34d;
+  --flc-shadow: rgba(0, 0, 0, 0.45);
+  --flc-shadow-soft: rgba(0, 0, 0, 0.35);
+  --flc-google-hover: #243044;
+  --flc-spinner-track: #2d3748;
+  --flc-close-bg: #243044;
+  --flc-close-hover: #2d3748;
+  --flc-meaning-border: #2d3748;
+  --flc-badge-ready-bg: #14532d;
+  --flc-badge-ready-text: #86efac;
+  --flc-primary-soft: rgba(107, 138, 255, 0.55);
+  --flc-primary-soft-strong: rgba(107, 138, 255, 0.65);
+  --flc-primary-tint: rgba(107, 138, 255, 0.2);
+  --flc-color-scheme: dark;
+}
+
+/*
+ * Chrome on Windows leaves extension popups transparent when color-scheme is set
+ * unless html/body paint an opaque background themselves.
+ */
+html {
+  color-scheme: var(--flc-color-scheme);
+  background-color: #f4f6fb;
+  background-color: var(--flc-bg);
+}

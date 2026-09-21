@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Strip Cursor attribution trailers that the agent runtime may inject.
+set -euo pipefail
+
+msg_file="${1:-}"
+if [[ -z "$msg_file" || ! -f "$msg_file" ]]; then
+  exit 0
+fi
+
+# Portable in-place edit (GNU/BSD sed).
+tmp="$(mktemp)"
+grep -v -E '^[[:space:]]*(Co-authored-by:[[:space:]]*Cursor|Made-with:[[:space:]]*Cursor)' "$msg_file" > "$tmp" || true
+mv "$tmp" "$msg_file"

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FLC</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>FLC</h1>
+      <p class="subtitle">Foreign Language Companion</p>
+    </header>
+
+    <div id="extension-notice" class="notice-banner hidden"></div>
+
+    <nav class="tabs">
+      <button type="button" data-tab="lookup" class="active">Lookup</button>
+      <button type="button" data-tab="vocab">My words</button>
+      <button type="button" data-tab="media">Media</button>
+    </nav>
+
+    <section id="auth-panel" class="panel">
+      <h2>Sign in</h2>
+      <p class="muted">Only Google accounts on the allowlist can use this extension.</p>
+      <button type="button" id="btn-google-login" class="google-btn">
+        <span class="google-icon">G</span>
+        Sign in with Google
+      </button>
+      <p id="auth-error" class="error"></p>
+    </section>
+
+    <section id="lookup-panel" class="panel tab-panel">
+      <div class="row">
+        <div class="input-with-clear">
+          <input id="lookup-input" type="text" placeholder="Enter an English word..." />
+          <button type="button" class="input-clear" hidden aria-label="Clear">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+        <button type="button" id="btn-lookup">Look up</button>
+      </div>
+      <div id="lookup-resolve-header" class="lookup-resolve-header hidden"></div>
+      <div id="lookup-result" class="card hidden"></div>
+      <div id="lookup-actions" class="lookup-actions hidden">
+        <button type="button" id="btn-save-word" class="primary">Save word</button>
+      </div>
+      <p id="lookup-error" class="error"></p>
+    </section>
+
+    <section id="vocab-panel" class="panel tab-panel hidden">
+      <div class="row">
+        <div class="input-with-clear">
+          <input id="vocab-search" type="search" placeholder="Search saved words..." autocomplete="off" />
+          <button type="button" class="input-clear" hidden aria-label="Clear">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <ul id="vocab-list"></ul>
+      <p id="vocab-empty" class="muted">No words yet.</p>
+    </section>
+
+    <section id="media-panel" class="panel tab-panel hidden">
+      <form id="media-form" class="card">
+        <input name="title" placeholder="Title (auto-filled on YouTube tabs)" required />
+        <input name="url" type="url" placeholder="YouTube / audio URL (auto-filled on YouTube tabs)" required />
+        <select name="type">
+          <option value="youtube">YouTube</option>
+          <option value="audio">Audio URL (listening reminders)</option>
+        </select>
+        <select name="frequency">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+        <select name="difficulty">
+          <option value="beginner">Beginner</option>
+          <option value="intermediate" selected>Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+        <button type="submit">Add link</button>
+        <button type="button" id="btn-prefill-youtube" class="secondary">Get from YouTube tab</button>
+        <p id="media-form-status" class="muted"></p>
+      </form>
+      <ul id="media-list"></ul>
+      <div id="listening-quiz-area" class="card hidden"></div>
+    </section>
+
+    <footer>
+      <span id="user-label"></span>
+      <div class="theme-toggle" role="group" aria-label="Choose theme">
+        <button type="button" data-theme-choice="light" title="Light">☀️</button>
+        <button type="button" data-theme-choice="dark" title="Dark">🌙</button>
+        <button type="button" data-theme-choice="system" title="System">💻</button>
+      </div>
+      <a href="#" id="open-options">Settings</a>
+      <button type="button" id="btn-logout" class="link hidden">Sign out</button>
+    </footer>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

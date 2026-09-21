@@ -1,0 +1,112 @@
+@import url('../shared/theme.css');
+
+html,
+body {
+  background-color: #f4f6fb;
+  background-color: var(--flc-bg);
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 0 20px;
+  color: var(--flc-text);
+}
+
+label {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.section {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--flc-border);
+}
+
+.section h2 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: var(--flc-muted);
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+.hint code {
+  font-size: 0.8rem;
+  background: var(--flc-hint-bg);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.preview {
+  font-size: 0.875rem;
+  color: var(--flc-primary);
+  margin: -8px 0 12px;
+  word-break: break-all;
+}
+
+.preview.error {
+  color: var(--flc-danger);
+}
+
+.preset-row,
+.theme-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+input[type='text'],
+input[type='url'],
+input[type='number'] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid var(--flc-input-border);
+  border-radius: 6px;
+  background: var(--flc-surface);
+  color: var(--flc-text);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+button {
+  padding: 10px 16px;
+  background: var(--flc-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button.secondary,
+.theme-toggle button {
+  background: var(--flc-hint-bg);
+  color: var(--flc-text);
+  font-size: 0.875rem;
+  padding: 6px 12px;
+}
+
+.theme-toggle button.active {
+  background: var(--flc-primary);
+  color: #fff;
+}
+
+.status {
+  color: var(--flc-success-text);
+  margin-top: 12px;
+}
+
+.status.error {
+  color: var(--flc-danger);
+}

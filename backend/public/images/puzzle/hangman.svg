@@ -1,0 +1,31 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hm-bg" x1="0" y1="0" x2="400" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7c2d12"/>
+      <stop offset="1" stop-color="#b45309"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" rx="24" fill="url(#hm-bg)"/>
+  <circle cx="340" cy="240" r="80" fill="#ffffff" opacity="0.05"/>
+  <!-- gallows -->
+  <g stroke="#ffe8d6" stroke-width="10" stroke-linecap="round">
+    <line x1="70" y1="240" x2="170" y2="240"/>
+    <line x1="110" y1="240" x2="110" y2="70"/>
+    <line x1="110" y1="70" x2="210" y2="70"/>
+    <line x1="210" y1="70" x2="210" y2="100"/>
+  </g>
+  <!-- head -->
+  <circle cx="210" cy="122" r="22" stroke="#ffe8d6" stroke-width="8" fill="none"/>
+  <!-- body -->
+  <g stroke="#ffe8d6" stroke-width="8" stroke-linecap="round">
+    <line x1="210" y1="144" x2="210" y2="195"/>
+    <line x1="210" y1="160" x2="188" y2="182"/>
+    <line x1="210" y1="160" x2="232" y2="182"/>
+  </g>
+  <!-- blanks -->
+  <g font-family="system-ui, sans-serif" font-weight="900" font-size="40" fill="#ffffff" text-anchor="middle">
+    <text x="270" y="255">_</text>
+    <text x="305" y="255">A</text>
+    <text x="340" y="255">_</text>
+  </g>
+</svg>
