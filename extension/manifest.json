@@ -5,7 +5,7 @@
   "description": "Tra từ Anh-Anh, lưu từ vựng, quản lý link nghe và nhắc ôn tập.",
   "permissions": ["storage", "alarms", "notifications", "activeTab", "tabs", "scripting", "contextMenus", "identity"],
   "host_permissions": [
-    "https://flc.nvnhan0810.com/*",
+    "https://foreign.nvnhan0810.com/*",
     "http://localhost:8080/*",
     "http://127.0.0.1:8080/*",
     "https://www.youtube.com/*",

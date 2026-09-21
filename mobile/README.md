@@ -4,15 +4,15 @@ WebView shell cho FLC web app: đăng nhập Google native → handoff Sanctum �
 
 ## Flow
 
-1. **Sign in with Google** (`flutter_web_auth_2` → `flc://oauth-callback`) → Sanctum token  
-2. `POST /api/auth/webview-session` → one-time handoff URL  
+1. **Sign in with Google** (`flutter_web_auth_2` → `flc://oauth-callback`) → Sanctum token
+2. `POST /api/auth/webview-session` → one-time handoff URL
 3. WebView mở web app (UA `FLCApp/`, theme sync qua `flc_theme`)
 
 ## Cấu hình (`.env`)
 
 ```env
-WEBAPP_URL=https://flc.nvnhan0810.com
-API_BASE_URL=https://flc.nvnhan0810.com/api
+WEBAPP_URL=https://foreign.nvnhan0810.com
+API_BASE_URL=https://foreign.nvnhan0810.com/api
 ```
 
 Local:

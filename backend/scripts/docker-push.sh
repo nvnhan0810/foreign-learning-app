@@ -8,7 +8,7 @@ cd "$ROOT_DIR"
 : "${GHCR_TOKEN:?Set GHCR_TOKEN (GitHub PAT with write:packages or GITHUB_TOKEN)}"
 
 TAG="${1:-latest}"
-APP_URL="${APP_URL:-https://flc.nvnhan0810.com}"
+APP_URL="${APP_URL:-https://foreign.nvnhan0810.com}"
 PLATFORM="${PLATFORM:-linux/amd64}"
 
 echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USER:-nvnhan0810}" --password-stdin

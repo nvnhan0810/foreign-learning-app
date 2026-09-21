@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG APP_URL=https://flc.nvnhan0810.com
+ARG APP_URL=https://foreign.nvnhan0810.com
 
 # -----------------------------------------------------------------------------
 # PHP dependencies
@@ -10,9 +10,9 @@ FROM php:8.4-cli-bookworm AS vendor
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        git \
-        unzip \
-        libzip-dev \
+    git \
+    unzip \
+    libzip-dev \
     && docker-php-ext-install zip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -56,26 +56,26 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TZ=UTC
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        nginx \
-        supervisor \
-        curl \
-        ca-certificates \
-        libpng-dev \
-        libjpeg62-turbo-dev \
-        libfreetype6-dev \
-        libzip-dev \
-        libpq-dev \
-        libonig-dev \
-        libxml2-dev \
+    nginx \
+    supervisor \
+    curl \
+    ca-certificates \
+    libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
+    libzip-dev \
+    libpq-dev \
+    libonig-dev \
+    libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" \
-        gd \
-        pdo_pgsql \
-        zip \
-        bcmath \
-        opcache \
-        mbstring \
-        xml \
+    gd \
+    pdo_pgsql \
+    zip \
+    bcmath \
+    opcache \
+    mbstring \
+    xml \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/99-opcache.ini

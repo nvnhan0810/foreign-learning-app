@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -11,7 +11,9 @@
 
       <section class="section">
         <h2>Appearance</h2>
-        <p class="hint">Applies to the extension popup and the on-page lookup panel.</p>
+        <p class="hint">
+          Applies to the extension popup and the on-page lookup panel.
+        </p>
         <div class="theme-toggle" role="group" aria-label="Choose theme">
           <button type="button" data-theme-choice="light">☀️ Light</button>
           <button type="button" data-theme-choice="dark">🌙 Dark</button>
@@ -22,8 +24,8 @@
       <section class="section">
         <h2>API domain</h2>
         <p class="hint">
-          Enter a domain or full URL. The extension adds <code>https://</code> and
-          <code>/api</code> if missing.
+          Enter a domain or full URL. The extension adds
+          <code>https://</code> and <code>/api</code> if missing.
         </p>
         <label>
           API address
@@ -32,14 +34,20 @@
             type="text"
             spellcheck="false"
             autocomplete="off"
-            placeholder="flc.nvnhan0810.com or https://flc.nvnhan0810.com/api"
+            placeholder="foreign.nvnhan0810.com or https://foreign.nvnhan0810.com/api"
           />
         </label>
         <p id="api-preview" class="preview" hidden></p>
         <div class="preset-row">
-          <button type="button" id="btn-api-production" class="secondary">Production</button>
-          <button type="button" id="btn-api-local" class="secondary">Local (8080)</button>
-          <button type="button" id="btn-api-reset" class="secondary">Default</button>
+          <button type="button" id="btn-api-production" class="secondary">
+            Production
+          </button>
+          <button type="button" id="btn-api-local" class="secondary">
+            Local (8080)
+          </button>
+          <button type="button" id="btn-api-reset" class="secondary">
+            Default
+          </button>
         </div>
       </section>
 

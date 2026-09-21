@@ -7,10 +7,23 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      deploy_only:
+        description: "Skip build, only trigger deploy webhook"
+        type: boolean
+        default: false
+      image_tag:
+        description: "Image tag when deploy_only=true (e.g. abc1234). Empty = short SHA."
+        required: false
+        type: string
+
+concurrency:
+  group: foreign-publish-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: nvnhan0810/foreign-learning-app
   DEPLOY_REPO: foreign_nvnhan0810_com
   DEPLOY_TAG: production
 
@@ -38,7 +51,9 @@ jobs:
       - name: Set build flag
         id: result
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.deploy_only }}" = "true" ]; then
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] || [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "should_build=true" >> "$GITHUB_OUTPUT"
           elif [ "${{ steps.filter.outputs.should_build }}" = "true" ]; then
             echo "should_build=true" >> "$GITHUB_OUTPUT"
@@ -74,11 +89,13 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
+            # Floating tag for quick pulls / default Deployment
+            type=raw,value=main,enable={{is_default_branch}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Pin used by deploy webhook + kustomize
+            type=sha,prefix=,format=short
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=short,prefix=
-            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -90,8 +107,32 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             APP_URL=https://foreign.nvnhan0810.com
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=foreign-learning-app-production
+          cache-to: type=gha,mode=max,scope=foreign-learning-app-production
+          provenance: false
+          sbom: false
+
+  deploy:
+    needs: build-and-push
+    if: >
+      always()
+      && github.event_name != 'pull_request'
+      && (
+        needs.build-and-push.result == 'success'
+        || (needs.build-and-push.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.deploy_only == true)
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve image tag
+        id: image
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.image_tag }}" ]; then
+            TAG="${{ inputs.image_tag }}"
+          else
+            TAG="${GITHUB_SHA:0:7}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Deploying image tag: ${TAG}"
 
       - name: Trigger deploy webhook
         env:
@@ -104,8 +145,8 @@ jobs:
             exit 0
           fi
 
-          IMAGE="ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')"
-          IMAGE_TAG="${GITHUB_SHA::7}"
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          IMAGE_TAG="${{ steps.image.outputs.tag }}"
 
           curl -fsS --max-time 30 -X POST 'https://deploy.nvnhan0810.com/deploy' \
             -H "Authorization: Bearer ${DEPLOY_TOKEN}" \

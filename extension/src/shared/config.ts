@@ -1,5 +1,5 @@
 /** API mặc định — đổi tại đây hoặc trong Options của extension. */
-export const DEFAULT_API_BASE_URL = 'https://flc.nvnhan0810.com/api';
+export const DEFAULT_API_BASE_URL = 'https://foreign.nvnhan0810.com/api';
 
 /** Chuẩn hóa domain hoặc URL đầy đủ thành base API (kết thúc bằng /api). */
 export function normalizeApiBaseUrl(input: string): string {
