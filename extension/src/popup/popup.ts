@@ -86,7 +86,7 @@ async function init() {
     input.dispatchEvent(new Event('input', { bubbles: true }));
     await chrome.storage.local.remove('lookupWord');
     switchTab('lookup');
-    await doLookup();
+    // Prefill only — look up on Enter or Look up button.
   }
 }
 

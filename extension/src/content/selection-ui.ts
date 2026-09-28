@@ -10,7 +10,7 @@ import {
   renderDictionaryHtml,
 } from '../shared/dictionary-ui';
 import { ExtensionContextError, isExtensionContextValid, runtimeGetURL, runtimeSendMessage } from '../shared/extension-context';
-import { getAuth, getSettings, setLookupWord } from '../shared/storage';
+import { getAuth, getSettings } from '../shared/storage';
 import { applyTheme, resolveTheme, type ThemeMode } from '../shared/theme';
 import type { DictionaryResult } from '../shared/types';
 import overlayCss from './content-overlay.css?inline';
@@ -136,7 +136,6 @@ function processSelection(): void {
   currentSelection = text;
   captureAnchorRect();
   showFab();
-  void setLookupWord(lookupTermFromSelection(text));
 }
 
 function syncPanelSurface(mode: ThemeMode): void {
