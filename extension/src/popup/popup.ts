@@ -7,7 +7,7 @@ import {
   renderDictionaryHtml,
   playPronunciation,
 } from '../shared/dictionary-ui';
-import { loginWithGoogle } from '../shared/googleAuth';
+import { loginWithSso } from '../shared/ssoAuth';
 import {
   cacheSync,
   clearAuth,
@@ -96,7 +96,7 @@ function switchTab(tab: string) {
 }
 
 function bindAuth() {
-  $('btn-google-login').addEventListener('click', () => void googleLogin());
+  $('btn-sso-login').addEventListener('click', () => void ssoLogin());
   $('btn-logout').addEventListener('click', () => void logout());
 }
 
@@ -137,15 +137,15 @@ function showExtensionNotice(notice?: string | null) {
   el.classList.remove('hidden');
 }
 
-async function googleLogin() {
+async function ssoLogin() {
   setAuthError('');
-  const btn = $('btn-google-login') as HTMLButtonElement;
+  const btn = $('btn-sso-login') as HTMLButtonElement;
   btn.disabled = true;
   try {
-    await loginWithGoogle();
+    await loginWithSso();
     await refreshAuthUi();
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Google sign-in failed.';
+    const msg = e instanceof Error ? e.message : 'Sign-in failed.';
     if (chrome.runtime.lastError?.message) {
       setAuthError(chrome.runtime.lastError.message);
     } else {

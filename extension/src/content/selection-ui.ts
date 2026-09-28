@@ -326,7 +326,7 @@ async function loadWordIntoPanel(lookupWord: string, originalSelection?: string)
 
   if (!auth.token) {
     body.innerHTML = `
-      <p class="flc-msg">Sign in with Google in the FLC extension (toolbar icon).</p>
+      <p class="flc-msg">Sign in with nvnhan0810 in the FLC extension (toolbar icon).</p>
     `;
     const actions = showPanelFooter(
       `<button type="button" class="flc-btn flc-btn-secondary flc-open-extension">Open FLC</button>`

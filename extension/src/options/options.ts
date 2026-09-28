@@ -4,6 +4,7 @@ import { getSettings, saveSettings } from '../shared/storage';
 import { applyTheme, bindThemeToggleButtons, type ThemeMode } from '../shared/theme';
 
 const LOCAL_API = 'http://localhost:8080/api';
+const DEV_API = 'https://foreign-dev.nvnhan0810.com/api';
 
 function setStatus(message: string, isError = false): void {
   const status = document.getElementById('status');
@@ -62,6 +63,10 @@ async function init() {
 
   document.getElementById('btn-api-production')?.addEventListener('click', () => {
     apiInput.value = DEFAULT_API_BASE_URL;
+    updateApiPreview();
+  });
+  document.getElementById('btn-api-dev')?.addEventListener('click', () => {
+    apiInput.value = DEV_API;
     updateApiPreview();
   });
   document.getElementById('btn-api-local')?.addEventListener('click', () => {
