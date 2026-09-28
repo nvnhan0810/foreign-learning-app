@@ -162,6 +162,12 @@ button {
   cursor: pointer;
 }
 
+button:disabled,
+input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 button.secondary {
   background: var(--flc-secondary-btn);
 }

@@ -205,8 +205,16 @@ function hideLookupResult(): void {
 
 async function doLookup() {
   $('lookup-error').textContent = '';
-  const word = ($('lookup-input') as HTMLInputElement).value.trim();
-  if (!word) return;
+  const input = $('lookup-input') as HTMLInputElement;
+  const btn = $('btn-lookup') as HTMLButtonElement;
+  const word = input.value.trim();
+  if (!word || btn.disabled) return;
+
+  const previousLabel = btn.textContent ?? 'Look up';
+  input.disabled = true;
+  btn.disabled = true;
+  btn.textContent = 'Looking up…';
+
   try {
     const resolved = await api.resolveLookup(word);
     currentLookup = resolved.dictionary;
@@ -214,6 +222,10 @@ async function doLookup() {
   } catch {
     hideLookupResult();
     $('lookup-error').textContent = LOOKUP_ERROR_MESSAGE;
+  } finally {
+    input.disabled = false;
+    btn.disabled = false;
+    btn.textContent = previousLabel;
   }
 }
 
