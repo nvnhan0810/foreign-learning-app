@@ -9,9 +9,14 @@ final class HttpFreeDictionaryGateway implements FreeDictionaryGateway
 {
     public function fetch(string $normalizedWord): ?array
     {
-        $response = Http::timeout(10)->get(
-            'https://api.dictionaryapi.dev/api/v2/entries/en/'.$normalizedWord
-        );
+        try {
+            $response = Http::timeout(10)->get(
+                'https://api.dictionaryapi.dev/api/v2/entries/en/'.$normalizedWord
+            );
+        } catch (\Throwable) {
+            // Production (k3s) may time out or block this upstream — never 500 the caller.
+            return null;
+        }
 
         if (! $response->successful()) {
             return null;

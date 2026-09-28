@@ -3,7 +3,6 @@
 namespace Flc\Dictionary\Application\Handler;
 
 use Flc\Dictionary\Application\Command\UpsertDictionaryOnSave;
-use Flc\Dictionary\Application\FreeDictionaryGateway;
 use Flc\Dictionary\Application\Repository\DictionaryEntryRepository;
 use Flc\Dictionary\Domain\DictionaryEntry;
 use Flc\Shared\Application\Command;
@@ -14,7 +13,6 @@ final class UpsertDictionaryOnSaveHandler implements CommandHandler
 {
     public function __construct(
         private readonly DictionaryEntryRepository $entries,
-        private readonly FreeDictionaryGateway $gateway,
     ) {}
 
     public function handle(Command $command): mixed
@@ -30,7 +28,7 @@ final class UpsertDictionaryOnSaveHandler implements CommandHandler
         $payload = $command->payload;
 
         if ($entry === null) {
-            $payload ??= $this->gateway->fetch($normalized);
+            // Save must use client/local payload only — never fetch Free Dictionary here.
             if ($payload === null) {
                 return null;
             }
