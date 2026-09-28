@@ -314,7 +314,7 @@ li.item a {
 
 .lookup-resolve-header em {
   color: var(--flc-text);
-  font-style: normal;
+  font-style: italic;
   font-weight: 600;
 }
 

@@ -220,13 +220,33 @@ async function doLookup() {
     currentLookup = resolved.dictionary;
     renderLookup(resolved.selected, resolved.resolved, currentLookup);
   } catch {
-    hideLookupResult();
+    renderPhraseDraft(word);
     $('lookup-error').textContent = LOOKUP_ERROR_MESSAGE;
   } finally {
     input.disabled = false;
     btn.disabled = false;
     btn.textContent = previousLabel;
   }
+}
+
+function renderPhraseDraft(searchedWord: string): void {
+  currentLookup = {
+    word: searchedWord,
+    meanings: [],
+    phonetic: null,
+    audio_url: null,
+  };
+
+  const header = $('lookup-resolve-header');
+  header.innerHTML = `No dictionary entry for <em>${escapeHtml(searchedWord)}</em>. Add meanings with JSON or Copy prompt.`;
+  header.classList.remove('hidden');
+
+  $('lookup-body').classList.remove('hidden');
+  ($('lookup-json-input') as HTMLTextAreaElement).value = '[]';
+  $('btn-save-word').textContent = 'Save word';
+  $('btn-copy-prompt').textContent = 'Copy prompt';
+  setMeaningsViewMode(MeaningsViewMode.Json, { skipSync: true });
+  renderMeaningsUi(currentLookup);
 }
 
 function renderLookup(selected: string, resolved: string, data: DictionaryResult) {
@@ -282,7 +302,14 @@ function setMeaningsViewMode(
   jsonBtn.setAttribute('aria-pressed', isJson ? 'true' : 'false');
   uiBtn.classList.toggle('secondary', isJson);
   jsonBtn.classList.toggle('secondary', !isJson);
-  $('lookup-error').textContent = '';
+}
+
+function parseMeaningsJsonLenient(raw: string): Meaning[] {
+  const trimmed = raw.trim();
+  if (trimmed === '' || trimmed === '[]') {
+    return [];
+  }
+  return parseMeaningsJson(raw);
 }
 
 function syncUiToJson(): void {
@@ -294,7 +321,7 @@ function syncUiToJson(): void {
 
 function syncJsonToUi(): void {
   if (!currentLookup) return;
-  const meanings = parseMeaningsJson(
+  const meanings = parseMeaningsJsonLenient(
     ($('lookup-json-input') as HTMLTextAreaElement).value
   );
   currentLookup = { ...currentLookup, meanings };
@@ -309,6 +336,19 @@ function readCurrentMeanings(): Meaning[] {
     return parseMeaningsJson(($('lookup-json-input') as HTMLTextAreaElement).value);
   }
   return currentLookup.meanings;
+}
+
+function readMeaningsForPrompt(): Meaning[] | undefined {
+  if (!currentLookup) {
+    return undefined;
+  }
+  if (meaningsViewMode === MeaningsViewMode.Json) {
+    const meanings = parseMeaningsJsonLenient(
+      ($('lookup-json-input') as HTMLTextAreaElement).value
+    );
+    return meanings.length > 0 ? meanings : undefined;
+  }
+  return currentLookup.meanings.length > 0 ? currentLookup.meanings : undefined;
 }
 
 async function flashButton(id: string, label: string): Promise<void> {
@@ -326,7 +366,7 @@ async function copyMeaningsPrompt(): Promise<void> {
   const btn = $('btn-copy-prompt') as HTMLButtonElement;
   btn.disabled = true;
   try {
-    const meanings = readCurrentMeanings();
+    const meanings = readMeaningsForPrompt();
     const { data } = await api.buildMeaningsPrompt({
       word: currentLookup.word,
       meanings,
