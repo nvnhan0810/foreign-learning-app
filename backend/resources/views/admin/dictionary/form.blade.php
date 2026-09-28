@@ -361,16 +361,6 @@
 
     function buildPrompt() {
         var word = (wordInput.value || '').trim() || '{WORD}';
-        var meanings = [];
-        try {
-            meanings = currentMode() === MODE_JSON
-                ? parseJsonMeanings(jsonArea.value || '[]')
-                : readFormMeanings();
-        } catch (err) {
-            meanings = readFormMeanings();
-        }
-        var meaningsJson = JSON.stringify(meanings, null, 2);
-
         var text = promptTemplate || '';
         if (text.indexOf('{WORD}') !== -1) {
             text = text.replace(/\{WORD\}/g, word);
@@ -378,15 +368,6 @@
             text = text.replace(/Word \/ phrase: .*/, 'Word / phrase: ' + word);
         } else {
             text = 'Return a JSON array of meanings for "' + word + '" with keys part_of_speech, definition, examples, synonyms, antonyms. English only in all string values.';
-        }
-
-        if (/Current meanings JSON[\s\S]*?(?=Learner context)/.test(text)) {
-            text = text.replace(
-                /Current meanings JSON[\s\S]*?(?=Learner context)/,
-                'Current meanings JSON (edit/merge; may be empty):\n' + meaningsJson + '\n\n'
-            );
-        } else {
-            text += '\n\nCurrent meanings JSON (edit/merge; may be empty):\n' + meaningsJson + '\n';
         }
 
         return text;

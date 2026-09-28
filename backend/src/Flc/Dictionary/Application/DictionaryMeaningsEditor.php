@@ -127,17 +127,14 @@ final class DictionaryMeaningsEditor
     }
 
     /**
-     * @param  list<array<string, mixed>>  $currentMeanings
      * @param  list<string>  $learnerContext  Short notes (usage, meaning, comparison, etc.)
      */
     public static function aiPrompt(
         string $word,
-        array $currentMeanings = [],
         array $learnerContext = [],
     ): string {
         $word = trim($word);
         $label = $word !== '' ? $word : '{WORD}';
-        $currentJson = self::toPrettyJson($currentMeanings);
         $contextBlock = self::formatLearnerContextBlock($learnerContext);
 
         return <<<PROMPT
@@ -166,16 +163,8 @@ Rules:
 - ALL string values in the JSON MUST be English only. Do NOT put Vietnamese (or any non-English language) in definition, examples, synonyms, antonyms, or part_of_speech.
 - Include multiple meanings when the word has distinct senses.
 - Do not include extra keys (no "example" singular — use "examples").
-
-Edit / merge instructions:
-- Start from the "Current meanings JSON" below when it is not empty.
-- Keep senses that are still accurate and useful; refine wording if needed.
-- Add new senses, examples, synonyms, or antonyms that are missing.
+- Prefer one clear entry per distinct meaning; deduplicate overlapping senses.
 - If "Learner context from prior study" is present, synthesize that history into the JSON (usage, nuance, situations, comparisons). Fold useful points into definitions/examples — do not invent Vietnamese glosses.
-- Deduplicate overlapping senses. Prefer one clear entry per distinct meaning.
-
-Current meanings JSON (edit/merge; may be empty):
-{$currentJson}
 
 {$contextBlock}
 PROMPT;
