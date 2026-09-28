@@ -182,49 +182,49 @@ button.link {
   border: 1px solid var(--flc-border);
 }
 
-.lookup-actions {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--flc-border);
+.lookup-body {
+  margin-top: 8px;
+}
+
+.meanings-header {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  margin-bottom: 6px;
 }
 
-.lookup-action-row {
-  display: flex;
-  gap: 6px;
+.meanings-mode-toggle {
+  display: inline-flex;
+  gap: 4px;
 }
 
-.lookup-action-row button {
-  flex: 1;
-  min-width: 0;
+.meanings-mode-toggle button {
+  padding: 5px 10px;
+  font-size: 11px;
 }
 
-.lookup-actions #btn-save-word,
-.lookup-json-save #btn-save-json {
-  width: 100%;
-  display: block;
+.meanings-mode-toggle button[aria-pressed='true'] {
+  background: var(--flc-primary);
+  color: #fff;
 }
 
-.lookup-json-save {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--flc-border);
+.meanings-header #btn-copy-prompt {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  font-size: 11px;
+}
+
+.lookup-json-wrap {
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.lookup-json-save label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--flc-text);
-}
-
-.lookup-json-save textarea {
+.lookup-json-wrap textarea {
   width: 100%;
-  min-height: 120px;
+  min-height: 140px;
   padding: 8px;
   border: 1px solid var(--flc-input-border);
   border-radius: 6px;
@@ -236,8 +236,19 @@ button.link {
   resize: vertical;
 }
 
-.lookup-json-save .muted {
+.lookup-json-wrap .muted {
   margin: 0;
+}
+
+.lookup-actions {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--flc-border);
+}
+
+.lookup-actions #btn-save-word {
+  width: 100%;
+  display: block;
 }
 
 .meaning {

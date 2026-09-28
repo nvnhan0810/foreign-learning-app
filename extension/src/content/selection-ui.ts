@@ -371,7 +371,7 @@ async function loadWordIntoPanel(lookupWord: string, originalSelection?: string)
       positionPanelNearSelection();
       return;
     }
-    body.innerHTML = `<p class="flc-error">${escapeHtml(e instanceof ApiError ? e.message : 'Could not look up that word.')}</p>`;
+    body.innerHTML = `<p class="flc-error">Word not found or an error occurred.</p>`;
     const actions = showPanelFooter(
       `<button type="button" class="flc-btn flc-btn-secondary flc-close-btn">Close</button>`
     );

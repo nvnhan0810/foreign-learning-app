@@ -26,11 +26,22 @@ import { mediaDifficultyClass, mediaDifficultyLabel } from '../shared/media-diff
 import type {
   DictionaryResult,
   ListeningQuestion,
+  Meaning,
   MediaItem,
   Vocabulary,
 } from '../shared/types';
 
+const LOOKUP_ERROR_MESSAGE = 'Word not found or an error occurred.';
+
+const MeaningsViewMode = {
+  Ui: 'ui',
+  Json: 'json',
+} as const;
+
+type MeaningsViewMode = (typeof MeaningsViewMode)[keyof typeof MeaningsViewMode];
+
 let currentLookup: DictionaryResult | null = null;
+let meaningsViewMode: MeaningsViewMode = MeaningsViewMode.Ui;
 let vocabCache: Vocabulary[] = [];
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -179,11 +190,17 @@ function bindLookup() {
   $('btn-lookup').addEventListener('click', () => void doLookup());
   $('btn-save-word').addEventListener('click', () => void saveWord());
   $('btn-copy-prompt').addEventListener('click', () => void copyMeaningsPrompt());
-  $('btn-copy-json').addEventListener('click', () => void copyMeaningsJson());
-  $('btn-save-json').addEventListener('click', () => void saveWordFromJson());
+  $('meanings-mode-ui').addEventListener('click', () => setMeaningsViewMode(MeaningsViewMode.Ui));
+  $('meanings-mode-json').addEventListener('click', () => setMeaningsViewMode(MeaningsViewMode.Json));
   $('lookup-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') void doLookup();
   });
+}
+
+function hideLookupResult(): void {
+  currentLookup = null;
+  $('lookup-body').classList.add('hidden');
+  $('lookup-resolve-header').classList.add('hidden');
 }
 
 async function doLookup() {
@@ -194,14 +211,9 @@ async function doLookup() {
     const resolved = await api.resolveLookup(word);
     currentLookup = resolved.dictionary;
     renderLookup(resolved.selected, resolved.resolved, currentLookup);
-  } catch (e) {
-    currentLookup = null;
-    $('lookup-result').classList.add('hidden');
-    $('lookup-actions').classList.add('hidden');
-    $('lookup-json-save').classList.add('hidden');
-    $('lookup-resolve-header').classList.add('hidden');
-    $('lookup-error').textContent =
-      e instanceof ApiError ? e.message : 'Could not look up that word.';
+  } catch {
+    hideLookupResult();
+    $('lookup-error').textContent = LOOKUP_ERROR_MESSAGE;
   }
 }
 
@@ -210,10 +222,16 @@ function renderLookup(selected: string, resolved: string, data: DictionaryResult
   header.innerHTML = buildResolveHeader(selected, resolved);
   header.classList.remove('hidden');
 
+  $('lookup-body').classList.remove('hidden');
+  ($('lookup-json-input') as HTMLTextAreaElement).value = meaningsToPrettyJson(data.meanings);
+  $('btn-save-word').textContent = 'Save word';
+  $('btn-copy-prompt').textContent = 'Copy prompt';
+  setMeaningsViewMode(MeaningsViewMode.Ui, { skipSync: true });
+  renderMeaningsUi(data);
+}
+
+function renderMeaningsUi(data: DictionaryResult): void {
   const el = $('lookup-result');
-  el.classList.remove('hidden');
-  $('lookup-actions').classList.remove('hidden');
-  $('lookup-json-save').classList.remove('hidden');
   el.innerHTML = renderDictionaryHtml(data, 6);
   bindPronunciationButtons(el);
   bindRelatedWordClicks(el, (word) => {
@@ -221,14 +239,64 @@ function renderLookup(selected: string, resolved: string, data: DictionaryResult
     input.value = word;
     void doLookup();
   });
-  $('btn-save-word').textContent = 'Save word';
-  ($('lookup-json-input') as HTMLTextAreaElement).value = meaningsToPrettyJson(data.meanings);
-  resetCopyButtons();
 }
 
-function resetCopyButtons(): void {
-  $('btn-copy-prompt').textContent = 'Copy prompt';
-  $('btn-copy-json').textContent = 'Copy JSON';
+function setMeaningsViewMode(
+  mode: MeaningsViewMode,
+  opts: { skipSync?: boolean } = {}
+): void {
+  if (!opts.skipSync && mode !== meaningsViewMode) {
+    try {
+      if (mode === MeaningsViewMode.Json) {
+        syncUiToJson();
+      } else {
+        syncJsonToUi();
+      }
+    } catch (e) {
+      $('lookup-error').textContent =
+        e instanceof Error ? e.message : 'Could not switch view.';
+      return;
+    }
+  }
+
+  meaningsViewMode = mode;
+  const isJson = mode === MeaningsViewMode.Json;
+  $('lookup-result').classList.toggle('hidden', isJson);
+  $('lookup-json-wrap').classList.toggle('hidden', !isJson);
+
+  const uiBtn = $('meanings-mode-ui');
+  const jsonBtn = $('meanings-mode-json');
+  uiBtn.setAttribute('aria-pressed', isJson ? 'false' : 'true');
+  jsonBtn.setAttribute('aria-pressed', isJson ? 'true' : 'false');
+  uiBtn.classList.toggle('secondary', isJson);
+  jsonBtn.classList.toggle('secondary', !isJson);
+  $('lookup-error').textContent = '';
+}
+
+function syncUiToJson(): void {
+  if (!currentLookup) return;
+  ($('lookup-json-input') as HTMLTextAreaElement).value = meaningsToPrettyJson(
+    currentLookup.meanings
+  );
+}
+
+function syncJsonToUi(): void {
+  if (!currentLookup) return;
+  const meanings = parseMeaningsJson(
+    ($('lookup-json-input') as HTMLTextAreaElement).value
+  );
+  currentLookup = { ...currentLookup, meanings };
+  renderMeaningsUi(currentLookup);
+}
+
+function readCurrentMeanings(): Meaning[] {
+  if (!currentLookup) {
+    throw new Error('Look up a word first.');
+  }
+  if (meaningsViewMode === MeaningsViewMode.Json) {
+    return parseMeaningsJson(($('lookup-json-input') as HTMLTextAreaElement).value);
+  }
+  return currentLookup.meanings;
 }
 
 async function flashButton(id: string, label: string): Promise<void> {
@@ -246,9 +314,10 @@ async function copyMeaningsPrompt(): Promise<void> {
   const btn = $('btn-copy-prompt') as HTMLButtonElement;
   btn.disabled = true;
   try {
+    const meanings = readCurrentMeanings();
     const { data } = await api.buildMeaningsPrompt({
       word: currentLookup.word,
-      meanings: currentLookup.meanings,
+      meanings,
       include_insights: true,
     });
     await copyTextToClipboard(data.prompt);
@@ -265,56 +334,26 @@ async function copyMeaningsPrompt(): Promise<void> {
   }
 }
 
-async function copyMeaningsJson(): Promise<void> {
-  if (!currentLookup) return;
-  $('lookup-error').textContent = '';
-  try {
-    const json = meaningsToPrettyJson(currentLookup.meanings);
-    ($('lookup-json-input') as HTMLTextAreaElement).value = json;
-    await copyTextToClipboard(json);
-    await flashButton('btn-copy-json', 'Copied ✓');
-  } catch (e) {
-    $('lookup-error').textContent =
-      e instanceof Error ? e.message : 'Could not copy JSON.';
-  }
-}
-
 async function saveWord() {
   if (!currentLookup) return;
-  try {
-    await api.saveVocabulary({
-      word: currentLookup.word,
-      phonetic: currentLookup.phonetic ?? undefined,
-      meanings: currentLookup.meanings,
-    });
-    $('lookup-error').textContent = '';
-    $('btn-save-word').textContent = 'Saved ✓';
-    setTimeout(() => {
-      $('btn-save-word').textContent = 'Save word';
-    }, 2000);
-  } catch (e) {
-    $('lookup-error').textContent =
-      e instanceof ApiError ? e.message : 'Could not save.';
-  }
-}
-
-async function saveWordFromJson(): Promise<void> {
-  if (!currentLookup) return;
   $('lookup-error').textContent = '';
-  const raw = ($('lookup-json-input') as HTMLTextAreaElement).value;
-  const btn = $('btn-save-json') as HTMLButtonElement;
+  const btn = $('btn-save-word') as HTMLButtonElement;
   btn.disabled = true;
   try {
-    const meanings = parseMeaningsJson(raw);
+    const meanings = readCurrentMeanings();
     await api.saveVocabulary({
       word: currentLookup.word,
       phonetic: currentLookup.phonetic ?? undefined,
       meanings,
     });
     currentLookup = { ...currentLookup, meanings };
+    ($('lookup-json-input') as HTMLTextAreaElement).value = meaningsToPrettyJson(meanings);
+    if (meaningsViewMode === MeaningsViewMode.Ui) {
+      renderMeaningsUi(currentLookup);
+    }
     btn.textContent = 'Saved ✓';
     setTimeout(() => {
-      btn.textContent = 'Save from JSON';
+      btn.textContent = 'Save word';
     }, 2000);
   } catch (e) {
     $('lookup-error').textContent =
@@ -322,7 +361,7 @@ async function saveWordFromJson(): Promise<void> {
         ? e.message
         : e instanceof Error
           ? e.message
-          : 'Could not save JSON.';
+          : 'Could not save.';
   } finally {
     btn.disabled = false;
   }

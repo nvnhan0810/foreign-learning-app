@@ -19,7 +19,7 @@ class DictionaryController extends Controller
         $result = $this->queries->ask(new ResolveLookupWord($word));
 
         if (! $result) {
-            return response()->json(['message' => 'Không tìm thấy từ.'], 404);
+            return response()->json(['message' => 'Word not found or an error occurred.'], 404);
         }
 
         return response()->json($result);
@@ -30,7 +30,7 @@ class DictionaryController extends Controller
         $result = $this->queries->ask(new LookupWord($word));
 
         if (! $result) {
-            return response()->json(['message' => 'Không tìm thấy từ.'], 404);
+            return response()->json(['message' => 'Word not found or an error occurred.'], 404);
         }
 
         return response()->json($result);
