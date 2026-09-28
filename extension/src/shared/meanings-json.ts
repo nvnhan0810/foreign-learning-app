@@ -79,6 +79,38 @@ export function meaningsToPrettyJson(meanings: Meaning[]): string {
   return JSON.stringify(payload, null, 2);
 }
 
+/** Local AI prompt for meanings JSON — same template as the backend, no API. */
+export function buildMeaningsAiPrompt(word: string): string {
+  const label = word.trim() !== '' ? word.trim() : '{WORD}';
+
+  return `You are helping curate an English dictionary entry for FLC.
+
+Word / phrase: ${label}
+
+Return ONLY a valid JSON array (no markdown fences, no commentary) of meanings in this exact schema:
+
+[
+  {
+    "part_of_speech": "adjective",
+    "definition": "Feeling or showing pleasure",
+    "examples": ["She looks happy today."],
+    "synonyms": ["joyful", "glad"],
+    "antonyms": ["sad", "unhappy"]
+  }
+]
+
+Rules:
+- Top-level MUST be a JSON array (or optionally {"meanings":[...]}).
+- Each item MUST have a non-empty string "definition".
+- "part_of_speech" is optional (noun, verb, adjective, adverb, phrase, idiom, ...). Use null or omit if unknown.
+- "examples", "synonyms", "antonyms" MUST be arrays of strings. Use [] when empty.
+- Prefer clear learner-friendly English definitions.
+- ALL string values in the JSON MUST be English only. Do NOT put Vietnamese (or any non-English language) in definition, examples, synonyms, antonyms, or part_of_speech.
+- Include multiple meanings when the word has distinct senses.
+- Do not include extra keys (no "example" singular — use "examples").
+- Prefer one clear entry per distinct meaning; deduplicate overlapping senses.`;
+}
+
 export async function copyTextToClipboard(text: string): Promise<void> {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);

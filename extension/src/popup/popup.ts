@@ -9,6 +9,7 @@ import {
 } from '../shared/dictionary-ui';
 import {
   copyTextToClipboard,
+  buildMeaningsAiPrompt,
   meaningsToPrettyJson,
   parseMeaningsJson,
 } from '../shared/meanings-json';
@@ -338,19 +339,6 @@ function readCurrentMeanings(): Meaning[] {
   return currentLookup.meanings;
 }
 
-function readMeaningsForPrompt(): Meaning[] | undefined {
-  if (!currentLookup) {
-    return undefined;
-  }
-  if (meaningsViewMode === MeaningsViewMode.Json) {
-    const meanings = parseMeaningsJsonLenient(
-      ($('lookup-json-input') as HTMLTextAreaElement).value
-    );
-    return meanings.length > 0 ? meanings : undefined;
-  }
-  return currentLookup.meanings.length > 0 ? currentLookup.meanings : undefined;
-}
-
 async function flashButton(id: string, label: string): Promise<void> {
   const btn = $(id);
   const original = btn.textContent ?? '';
@@ -366,21 +354,11 @@ async function copyMeaningsPrompt(): Promise<void> {
   const btn = $('btn-copy-prompt') as HTMLButtonElement;
   btn.disabled = true;
   try {
-    const meanings = readMeaningsForPrompt();
-    const { data } = await api.buildMeaningsPrompt({
-      word: currentLookup.word,
-      meanings,
-      include_insights: true,
-    });
-    await copyTextToClipboard(data.prompt);
+    await copyTextToClipboard(buildMeaningsAiPrompt(currentLookup.word));
     await flashButton('btn-copy-prompt', 'Copied ✓');
   } catch (e) {
     $('lookup-error').textContent =
-      e instanceof ApiError
-        ? e.message
-        : e instanceof Error
-          ? e.message
-          : 'Could not copy prompt.';
+      e instanceof Error ? e.message : 'Could not copy prompt.';
   } finally {
     btn.disabled = false;
   }

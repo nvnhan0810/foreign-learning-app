@@ -5,7 +5,6 @@ import type {
   ListeningQuestion,
   ListeningSessionOption,
   ListeningSessionStart,
-  Meaning,
   MediaItem,
   QuizQuestion,
   Vocabulary,
@@ -58,21 +57,6 @@ async function request<T>(
   return body as T;
 }
 
-export interface MeaningsAiPromptResult {
-  word: string;
-  prompt: string;
-  current_meanings: Meaning[];
-  meanings_json: string;
-  learner_context: string[];
-  insights: Array<{
-    id?: number | null;
-    word?: string;
-    insight_type?: string;
-    question?: string | null;
-    content?: string;
-  }>;
-}
-
 export const api = {
   logout() {
     return request('/logout', { method: 'POST' });
@@ -86,17 +70,6 @@ export const api = {
     return request<DictionaryResolveResult>(
       `/dictionary/resolve/${encodeURIComponent(word)}`
     );
-  },
-
-  buildMeaningsPrompt(payload: {
-    word: string;
-    meanings?: Meaning[];
-    include_insights?: boolean;
-  }) {
-    return request<{ data: MeaningsAiPromptResult }>('/dictionary/meanings-prompt', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
   },
 
   listVocabularies() {
