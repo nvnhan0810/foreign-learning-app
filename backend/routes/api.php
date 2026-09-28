@@ -36,6 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/dictionary/resolve/{word}', [DictionaryController::class, 'resolve'])
         ->where('word', '.*');
+    Route::post('/dictionary/meanings-prompt', [DictionaryController::class, 'meaningsPrompt']);
     Route::get('/dictionary/{word}', [DictionaryController::class, 'show'])
         ->where('word', '.*');
 

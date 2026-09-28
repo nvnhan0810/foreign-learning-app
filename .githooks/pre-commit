@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Rebuild Chrome extension and stage dist/ into the same commit when
+# non-dist extension files are staged.
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+STAGED="$(git diff --cached --name-only --diff-filter=ACMR || true)"
+
+# Skip unless something under extension/ outside dist/ is staged
+if ! printf '%s\n' "$STAGED" | grep -vE '^extension/dist/' | grep -qE '^extension/'; then
+  exit 0
+fi
+
+echo "[pre-commit] Building extension…"
+(
+  cd "$ROOT/extension"
+  npm run build
+)
+
+echo "[pre-commit] Staging extension/dist…"
+git add -A -- "$ROOT/extension/dist"
+
+exit 0

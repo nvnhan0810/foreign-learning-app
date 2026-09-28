@@ -62,7 +62,7 @@
             </div>
         </div>
         <p class="muted" id="meanings-form-hint">Examples: mỗi dòng một câu. Đồng/trái nghĩa: cách nhau bởi dấu phẩy.</p>
-        <p class="muted{{ $isJsonEditor ? '' : ' is-hidden' }}" id="meanings-json-hint">Dán JSON array meanings (hoặc {"meanings":[...]}). Dùng “Copy prompt AI” để nhờ AI xuất đúng format.</p>
+        <p class="muted{{ $isJsonEditor ? '' : ' is-hidden' }}" id="meanings-json-hint">Dán JSON array meanings (hoặc {"meanings":[...]}). Dùng “Copy prompt AI” để nhờ AI xuất đúng format — mọi chuỗi trong JSON phải là tiếng Anh (không nhét tiếng Việt).</p>
 
         @error('meanings_json')
             <p class="form-error">{{ $message }}</p>
@@ -361,13 +361,35 @@
 
     function buildPrompt() {
         var word = (wordInput.value || '').trim() || '{WORD}';
-        if (promptTemplate && promptTemplate.indexOf('{WORD}') !== -1) {
-            return promptTemplate.replace(/\{WORD\}/g, word);
+        var meanings = [];
+        try {
+            meanings = currentMode() === MODE_JSON
+                ? parseJsonMeanings(jsonArea.value || '[]')
+                : readFormMeanings();
+        } catch (err) {
+            meanings = readFormMeanings();
         }
-        if (promptTemplate) {
-            return promptTemplate.replace(/Word \/ phrase: .*/, 'Word / phrase: ' + word);
+        var meaningsJson = JSON.stringify(meanings, null, 2);
+
+        var text = promptTemplate || '';
+        if (text.indexOf('{WORD}') !== -1) {
+            text = text.replace(/\{WORD\}/g, word);
+        } else if (text) {
+            text = text.replace(/Word \/ phrase: .*/, 'Word / phrase: ' + word);
+        } else {
+            text = 'Return a JSON array of meanings for "' + word + '" with keys part_of_speech, definition, examples, synonyms, antonyms. English only in all string values.';
         }
-        return 'Return a JSON array of meanings for "' + word + '" with keys part_of_speech, definition, examples, synonyms, antonyms.';
+
+        if (/Current meanings JSON[\s\S]*?(?=Learner context)/.test(text)) {
+            text = text.replace(
+                /Current meanings JSON[\s\S]*?(?=Learner context)/,
+                'Current meanings JSON (edit/merge; may be empty):\n' + meaningsJson + '\n\n'
+            );
+        } else {
+            text += '\n\nCurrent meanings JSON (edit/merge; may be empty):\n' + meaningsJson + '\n';
+        }
+
+        return text;
     }
 
     addBtn.addEventListener('click', function () {

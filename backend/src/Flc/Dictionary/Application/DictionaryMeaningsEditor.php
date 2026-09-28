@@ -109,9 +109,9 @@ final class DictionaryMeaningsEditor
      */
     public static function toPrettyJson(array $meanings): string
     {
-        $normalized = DictionaryEntry::normalizeMeanings($meanings);
-        if ($normalized === []) {
-            $normalized = [[
+        $payload = self::toPromptMeaningsPayload($meanings);
+        if ($payload === []) {
+            $payload = [[
                 'part_of_speech' => null,
                 'definition' => '',
                 'examples' => [],
@@ -120,30 +120,28 @@ final class DictionaryMeaningsEditor
             ]];
         }
 
-        $payload = [];
-        foreach ($normalized as $meaning) {
-            $payload[] = [
-                'part_of_speech' => $meaning['part_of_speech'] ?? null,
-                'definition' => $meaning['definition'] ?? '',
-                'examples' => DictionaryEntry::stringList($meaning['examples'] ?? []),
-                'synonyms' => DictionaryEntry::stringList($meaning['synonyms'] ?? []),
-                'antonyms' => DictionaryEntry::stringList($meaning['antonyms'] ?? []),
-            ];
-        }
-
         return (string) json_encode(
             $payload,
             JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         );
     }
 
-    public static function aiPrompt(string $word): string
-    {
+    /**
+     * @param  list<array<string, mixed>>  $currentMeanings
+     * @param  list<string>  $learnerContext  Short notes (usage, meaning, comparison, etc.)
+     */
+    public static function aiPrompt(
+        string $word,
+        array $currentMeanings = [],
+        array $learnerContext = [],
+    ): string {
         $word = trim($word);
         $label = $word !== '' ? $word : '{WORD}';
+        $currentJson = self::toPrettyJson($currentMeanings);
+        $contextBlock = self::formatLearnerContextBlock($learnerContext);
 
         return <<<PROMPT
-You are helping curate an English dictionary entry for FLC admin.
+You are helping curate an English dictionary entry for FLC.
 
 Word / phrase: {$label}
 
@@ -164,10 +162,66 @@ Rules:
 - Each item MUST have a non-empty string "definition".
 - "part_of_speech" is optional (noun, verb, adjective, adverb, phrase, idiom, ...). Use null or omit if unknown.
 - "examples", "synonyms", "antonyms" MUST be arrays of strings. Use [] when empty.
-- Prefer clear learner-friendly definitions. Vietnamese definitions are allowed when appropriate for FLC.
+- Prefer clear learner-friendly English definitions.
+- ALL string values in the JSON MUST be English only. Do NOT put Vietnamese (or any non-English language) in definition, examples, synonyms, antonyms, or part_of_speech.
 - Include multiple meanings when the word has distinct senses.
 - Do not include extra keys (no "example" singular — use "examples").
+
+Edit / merge instructions:
+- Start from the "Current meanings JSON" below when it is not empty.
+- Keep senses that are still accurate and useful; refine wording if needed.
+- Add new senses, examples, synonyms, or antonyms that are missing.
+- If "Learner context from prior study" is present, synthesize that history into the JSON (usage, nuance, situations, comparisons). Fold useful points into definitions/examples — do not invent Vietnamese glosses.
+- Deduplicate overlapping senses. Prefer one clear entry per distinct meaning.
+
+Current meanings JSON (edit/merge; may be empty):
+{$currentJson}
+
+{$contextBlock}
 PROMPT;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $meanings
+     * @return list<array{part_of_speech: mixed, definition: string, examples: list<string>, synonyms: list<string>, antonyms: list<string>}>
+     */
+    public static function toPromptMeaningsPayload(array $meanings): array
+    {
+        $payload = [];
+        foreach (DictionaryEntry::normalizeMeanings($meanings) as $meaning) {
+            $payload[] = [
+                'part_of_speech' => $meaning['part_of_speech'] ?? null,
+                'definition' => (string) ($meaning['definition'] ?? ''),
+                'examples' => DictionaryEntry::stringList($meaning['examples'] ?? []),
+                'synonyms' => DictionaryEntry::stringList($meaning['synonyms'] ?? []),
+                'antonyms' => DictionaryEntry::stringList($meaning['antonyms'] ?? []),
+            ];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  list<string>  $learnerContext
+     */
+    private static function formatLearnerContextBlock(array $learnerContext): string
+    {
+        $notes = [];
+        foreach ($learnerContext as $note) {
+            if (! is_string($note)) {
+                continue;
+            }
+            $trimmed = trim($note);
+            if ($trimmed !== '') {
+                $notes[] = '- '.$trimmed;
+            }
+        }
+
+        if ($notes === []) {
+            return "Learner context from prior study:\n(none)";
+        }
+
+        return "Learner context from prior study (synthesize into the JSON):\n".implode("\n", $notes);
     }
 
     /**

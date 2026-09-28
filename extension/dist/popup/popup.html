@@ -44,7 +44,22 @@
       <div id="lookup-resolve-header" class="lookup-resolve-header hidden"></div>
       <div id="lookup-result" class="card hidden"></div>
       <div id="lookup-actions" class="lookup-actions hidden">
+        <div class="lookup-action-row">
+          <button type="button" id="btn-copy-prompt" class="secondary">Copy prompt</button>
+          <button type="button" id="btn-copy-json" class="secondary">Copy JSON</button>
+        </div>
         <button type="button" id="btn-save-word" class="primary">Save word</button>
+      </div>
+      <div id="lookup-json-save" class="lookup-json-save hidden">
+        <label for="lookup-json-input">Paste AI meanings JSON to save</label>
+        <textarea
+          id="lookup-json-input"
+          rows="8"
+          spellcheck="false"
+          placeholder='[{"part_of_speech":"noun","definition":"...","examples":[],"synonyms":[],"antonyms":[]}]'
+        ></textarea>
+        <button type="button" id="btn-save-json" class="primary">Save from JSON</button>
+        <p class="muted">Copy prompt → ask AI → paste JSON here (or Copy JSON to edit). English only in string values.</p>
       </div>
       <p id="lookup-error" class="error"></p>
     </section>

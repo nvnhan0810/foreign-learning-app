@@ -186,11 +186,58 @@ button.link {
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid var(--flc-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.lookup-actions #btn-save-word {
+.lookup-action-row {
+  display: flex;
+  gap: 6px;
+}
+
+.lookup-action-row button {
+  flex: 1;
+  min-width: 0;
+}
+
+.lookup-actions #btn-save-word,
+.lookup-json-save #btn-save-json {
   width: 100%;
   display: block;
+}
+
+.lookup-json-save {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--flc-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lookup-json-save label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--flc-text);
+}
+
+.lookup-json-save textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 8px;
+  border: 1px solid var(--flc-input-border);
+  border-radius: 6px;
+  background: var(--flc-surface);
+  color: var(--flc-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.lookup-json-save .muted {
+  margin: 0;
 }
 
 .meaning {

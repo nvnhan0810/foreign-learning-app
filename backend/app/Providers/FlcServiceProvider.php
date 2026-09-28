@@ -16,11 +16,13 @@ use Flc\Dictionary\Application\Command\CurateDictionaryEntry;
 use Flc\Dictionary\Application\Command\DeleteDictionaryEntry;
 use Flc\Dictionary\Application\Command\UpsertDictionaryOnSave;
 use Flc\Dictionary\Application\FreeDictionaryGateway;
+use Flc\Dictionary\Application\Handler\BuildMeaningsAiPromptHandler;
 use Flc\Dictionary\Application\Handler\CurateDictionaryEntryHandler;
 use Flc\Dictionary\Application\Handler\DeleteDictionaryEntryHandler;
 use Flc\Dictionary\Application\Handler\LookupWordHandler;
 use Flc\Dictionary\Application\Handler\ResolveLookupWordHandler;
 use Flc\Dictionary\Application\Handler\UpsertDictionaryOnSaveHandler;
+use Flc\Dictionary\Application\Query\BuildMeaningsAiPrompt;
 use Flc\Dictionary\Application\Query\LookupWord;
 use Flc\Dictionary\Application\Query\ResolveLookupWord;
 use Flc\Dictionary\Application\RelatedWordsGateway;
@@ -229,6 +231,7 @@ class FlcServiceProvider extends ServiceProvider
         return [
             LookupWord::class => LookupWordHandler::class,
             ResolveLookupWord::class => ResolveLookupWordHandler::class,
+            BuildMeaningsAiPrompt::class => BuildMeaningsAiPromptHandler::class,
             ListUserVocabularies::class => ListUserVocabulariesHandler::class,
             GetUserVocabulary::class => GetUserVocabularyHandler::class,
             FindUserVocabularyByWord::class => FindUserVocabularyByWordHandler::class,
