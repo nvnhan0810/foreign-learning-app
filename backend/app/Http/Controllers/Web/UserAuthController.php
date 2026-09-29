@@ -33,7 +33,7 @@ class UserAuthController extends Controller
         }
 
         return Inertia::render('Auth/Login', [
-            'googleUrl' => route('user.auth.sso'),
+            'ssoUrl' => route('user.auth.sso'),
         ]);
     }
 
@@ -69,7 +69,7 @@ class UserAuthController extends Controller
 
         if ($email === '') {
             return redirect()->route('user.login')
-                ->with('error', 'Google account has no email.');
+                ->with('error', 'Account has no email.');
         }
 
         if (! $this->queries->ask(new IsEmailAllowed($email))) {

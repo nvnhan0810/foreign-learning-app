@@ -3,7 +3,7 @@ import { Head, usePage } from '@inertiajs/vue3';
 import { computed, onMounted } from 'vue';
 
 defineProps({
-    googleUrl: { type: String, required: true },
+    ssoUrl: { type: String, required: true },
 });
 
 const page = usePage();
@@ -42,12 +42,12 @@ onMounted(() => {
                     Session expired. Return to the app sign-in screen.
                 </p>
                 <p class="muted" style="margin-top:16px;font-size:12px">
-                    Google sign-in is not available inside the in-app browser.
+                    Sign-in is not available inside the in-app browser.
                 </p>
             </template>
             <template v-else>
-                <a :href="googleUrl" class="btn btn-block">
-                    Sign in with Google
+                <a :href="ssoUrl" class="btn btn-block">
+                    Sign in with nvnhan0810.com
                 </a>
 
                 <div class="theme-toggle" role="group" aria-label="Choose theme" style="margin-top:24px">
