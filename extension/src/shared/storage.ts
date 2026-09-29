@@ -5,7 +5,7 @@ import {
   storageLocalRemove,
   storageLocalSet,
 } from './extension-context';
-import type { AuthState, UserSettings } from './types';
+import type { AuthState, DictionaryResult, UserSettings } from './types';
 
 const DEFAULT_SETTINGS: UserSettings = {
   apiBaseUrl: DEFAULT_API_BASE_URL,
@@ -13,6 +13,18 @@ const DEFAULT_SETTINGS: UserSettings = {
   mediaCheckMinutes: 30,
   notificationsEnabled: true,
   theme: 'system',
+};
+
+const LOOKUP_SESSION_KEY = 'lookupSession';
+
+export type LookupSessionState = {
+  inputWord: string;
+  selected: string;
+  resolved: string;
+  dictionary: DictionaryResult;
+  meaningsViewMode: 'ui' | 'json';
+  jsonText: string;
+  updatedAt: string;
 };
 
 export async function getSettings(): Promise<UserSettings> {
@@ -70,5 +82,37 @@ export async function setLookupWord(word: string): Promise<void> {
     await storageLocalSet({ lookupWord: word });
   } catch {
     // Tab cũ sau khi reload extension — bỏ qua
+  }
+}
+
+export async function saveLookupSession(session: LookupSessionState): Promise<void> {
+  if (!isExtensionContextValid()) return;
+  try {
+    await storageLocalSet({ [LOOKUP_SESSION_KEY]: session });
+  } catch {
+    // ignore invalidated context
+  }
+}
+
+export async function getLookupSession(): Promise<LookupSessionState | null> {
+  if (!isExtensionContextValid()) return null;
+  try {
+    const data = await storageLocalGet<{ lookupSession?: LookupSessionState }>(LOOKUP_SESSION_KEY);
+    const session = data.lookupSession;
+    if (!session || typeof session !== 'object' || !session.dictionary?.word) {
+      return null;
+    }
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearLookupSession(): Promise<void> {
+  if (!isExtensionContextValid()) return;
+  try {
+    await storageLocalRemove(LOOKUP_SESSION_KEY);
+  } catch {
+    // ignore
   }
 }

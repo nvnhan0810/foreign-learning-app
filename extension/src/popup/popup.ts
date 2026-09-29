@@ -17,9 +17,13 @@ import { loginWithSso } from '../shared/ssoAuth';
 import {
   cacheSync,
   clearAuth,
+  clearLookupSession,
   getAuth,
+  getLookupSession,
   getSettings,
+  saveLookupSession,
   saveSettings,
+  type LookupSessionState,
 } from '../shared/storage';
 import { applyTheme, bindThemeToggleButtons, type ThemeMode } from '../shared/theme';
 import { getActiveTabYouTubeInfo } from '../shared/youtube-tab';
@@ -44,6 +48,9 @@ type MeaningsViewMode = (typeof MeaningsViewMode)[keyof typeof MeaningsViewMode]
 let currentLookup: DictionaryResult | null = null;
 let meaningsViewMode: MeaningsViewMode = MeaningsViewMode.Ui;
 let vocabCache: Vocabulary[] = [];
+let lastSelected = '';
+let lastResolved = '';
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -80,6 +87,7 @@ async function init() {
     chrome.runtime.openOptionsPage();
   });
   await refreshAuthUi();
+
   const { lookupWord } = await chrome.storage.local.get('lookupWord');
   if (lookupWord) {
     const input = $('lookup-input') as HTMLInputElement;
@@ -88,7 +96,10 @@ async function init() {
     await chrome.storage.local.remove('lookupWord');
     switchTab('lookup');
     // Prefill only — look up on Enter or Look up button.
+    return;
   }
+
+  await restoreLookupSession();
 }
 
 function bindTabs() {
@@ -100,6 +111,7 @@ function bindTabs() {
 }
 
 function switchTab(tab: string) {
+  schedulePersistLookupSession();
   document.querySelectorAll('.tabs button').forEach((b) => {
     b.classList.toggle('active', (b as HTMLButtonElement).dataset.tab === tab);
   });
@@ -196,12 +208,95 @@ function bindLookup() {
   $('lookup-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') void doLookup();
   });
+  $('lookup-json-input').addEventListener('input', () => {
+    schedulePersistLookupSession();
+  });
 }
 
 function hideLookupResult(): void {
   currentLookup = null;
+  lastSelected = '';
+  lastResolved = '';
   $('lookup-body').classList.add('hidden');
   $('lookup-resolve-header').classList.add('hidden');
+  void clearLookupSession();
+}
+
+function schedulePersistLookupSession(): void {
+  if (persistTimer !== null) {
+    clearTimeout(persistTimer);
+  }
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    void persistLookupSession();
+  }, 200);
+}
+
+async function persistLookupSession(): Promise<void> {
+  if (!currentLookup) {
+    await clearLookupSession();
+    return;
+  }
+
+  const inputWord = ($('lookup-input') as HTMLInputElement).value;
+  const jsonText = ($('lookup-json-input') as HTMLTextAreaElement).value;
+  let dictionary = currentLookup;
+
+  if (meaningsViewMode === MeaningsViewMode.Json) {
+    try {
+      dictionary = {
+        ...currentLookup,
+        meanings: parseMeaningsJsonLenient(jsonText),
+      };
+    } catch {
+      // Keep last known meanings if JSON is mid-edit.
+    }
+  }
+
+  const session: LookupSessionState = {
+    inputWord,
+    selected: lastSelected || dictionary.word,
+    resolved: lastResolved || dictionary.word,
+    dictionary,
+    meaningsViewMode,
+    jsonText,
+    updatedAt: new Date().toISOString(),
+  };
+  await saveLookupSession(session);
+}
+
+async function restoreLookupSession(): Promise<void> {
+  const session = await getLookupSession();
+  if (!session?.dictionary?.word) {
+    return;
+  }
+
+  currentLookup = session.dictionary;
+  lastSelected = session.selected || session.dictionary.word;
+  lastResolved = session.resolved || session.dictionary.word;
+  meaningsViewMode = session.meaningsViewMode === MeaningsViewMode.Json
+    ? MeaningsViewMode.Json
+    : MeaningsViewMode.Ui;
+
+  const input = $('lookup-input') as HTMLInputElement;
+  input.value = session.inputWord || session.dictionary.word;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+
+  const header = $('lookup-resolve-header');
+  if (session.dictionary.meanings.length === 0) {
+    header.innerHTML = `No dictionary entry for <em>${escapeHtml(session.dictionary.word)}</em>. Add meanings with JSON or Copy prompt.`;
+  } else {
+    header.innerHTML = buildResolveHeader(lastSelected, lastResolved);
+  }
+  header.classList.remove('hidden');
+  $('lookup-body').classList.remove('hidden');
+  ($('lookup-json-input') as HTMLTextAreaElement).value =
+    session.jsonText || meaningsToPrettyJson(session.dictionary.meanings);
+  $('btn-save-word').textContent = 'Save word';
+  $('btn-copy-prompt').textContent = 'Copy prompt';
+  setMeaningsViewMode(meaningsViewMode, { skipSync: true });
+  renderMeaningsUi(session.dictionary);
+  switchTab('lookup');
 }
 
 async function doLookup() {
@@ -237,6 +332,8 @@ function renderPhraseDraft(searchedWord: string): void {
     phonetic: null,
     audio_url: null,
   };
+  lastSelected = searchedWord;
+  lastResolved = searchedWord;
 
   const header = $('lookup-resolve-header');
   header.innerHTML = `No dictionary entry for <em>${escapeHtml(searchedWord)}</em>. Add meanings with JSON or Copy prompt.`;
@@ -248,9 +345,13 @@ function renderPhraseDraft(searchedWord: string): void {
   $('btn-copy-prompt').textContent = 'Copy prompt';
   setMeaningsViewMode(MeaningsViewMode.Json, { skipSync: true });
   renderMeaningsUi(currentLookup);
+  schedulePersistLookupSession();
 }
 
 function renderLookup(selected: string, resolved: string, data: DictionaryResult) {
+  lastSelected = selected;
+  lastResolved = resolved;
+
   const header = $('lookup-resolve-header');
   header.innerHTML = buildResolveHeader(selected, resolved);
   header.classList.remove('hidden');
@@ -261,6 +362,7 @@ function renderLookup(selected: string, resolved: string, data: DictionaryResult
   $('btn-copy-prompt').textContent = 'Copy prompt';
   setMeaningsViewMode(MeaningsViewMode.Ui, { skipSync: true });
   renderMeaningsUi(data);
+  schedulePersistLookupSession();
 }
 
 function renderMeaningsUi(data: DictionaryResult): void {
@@ -303,6 +405,7 @@ function setMeaningsViewMode(
   jsonBtn.setAttribute('aria-pressed', isJson ? 'true' : 'false');
   uiBtn.classList.toggle('secondary', isJson);
   jsonBtn.classList.toggle('secondary', !isJson);
+  schedulePersistLookupSession();
 }
 
 function parseMeaningsJsonLenient(raw: string): Meaning[] {
@@ -327,6 +430,7 @@ function syncJsonToUi(): void {
   );
   currentLookup = { ...currentLookup, meanings };
   renderMeaningsUi(currentLookup);
+  schedulePersistLookupSession();
 }
 
 function readCurrentMeanings(): Meaning[] {
@@ -354,7 +458,19 @@ async function copyMeaningsPrompt(): Promise<void> {
   const btn = $('btn-copy-prompt') as HTMLButtonElement;
   btn.disabled = true;
   try {
-    await copyTextToClipboard(buildMeaningsAiPrompt(currentLookup.word));
+    let meaningsForPrompt = currentLookup.meanings;
+    if (meaningsViewMode === MeaningsViewMode.Json) {
+      try {
+        meaningsForPrompt = parseMeaningsJsonLenient(
+          ($('lookup-json-input') as HTMLTextAreaElement).value
+        );
+      } catch {
+        // Keep UI meanings if JSON is mid-edit / invalid.
+      }
+    }
+    await copyTextToClipboard(
+      buildMeaningsAiPrompt(currentLookup.word, meaningsForPrompt)
+    );
     await flashButton('btn-copy-prompt', 'Copied ✓');
   } catch (e) {
     $('lookup-error').textContent =
@@ -381,6 +497,7 @@ async function saveWord() {
     if (meaningsViewMode === MeaningsViewMode.Ui) {
       renderMeaningsUi(currentLookup);
     }
+    schedulePersistLookupSession();
     btn.textContent = 'Saved ✓';
     setTimeout(() => {
       btn.textContent = 'Save word';

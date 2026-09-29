@@ -67,7 +67,7 @@ export function parseMeaningsJson(raw: string): Meaning[] {
   return meanings;
 }
 
-export function meaningsToPrettyJson(meanings: Meaning[]): string {
+export function meaningsToPrettyJson(meanings: readonly Meaning[]): string {
   const payload = meanings.map((m) => ({
     part_of_speech: m.part_of_speech ?? null,
     definition: m.definition,
@@ -80,13 +80,26 @@ export function meaningsToPrettyJson(meanings: Meaning[]): string {
 }
 
 /** Local AI prompt for meanings JSON — same template as the backend, no API. */
-export function buildMeaningsAiPrompt(word: string): string {
+export function buildMeaningsAiPrompt(
+  word: string,
+  currentMeanings: readonly Meaning[] = [],
+): string {
   const label = word.trim() !== '' ? word.trim() : '{WORD}';
+  const hasCurrent = currentMeanings.some(
+    (m) => typeof m.definition === 'string' && m.definition.trim() !== '',
+  );
+  const currentBlock = hasCurrent
+    ? `
+
+Current meanings JSON (starting point — refine, do not discard useful senses without reason):
+${meaningsToPrettyJson(currentMeanings)}
+`
+    : '';
 
   return `You are helping curate an English dictionary entry for FLC.
 
 Word / phrase: ${label}
-
+${currentBlock}
 Return ONLY a valid JSON array (no markdown fences, no commentary) of meanings in this exact schema:
 
 [
@@ -108,7 +121,8 @@ Rules:
 - ALL string values in the JSON MUST be English only. Do NOT put Vietnamese (or any non-English language) in definition, examples, synonyms, antonyms, or part_of_speech.
 - Include multiple meanings when the word has distinct senses.
 - Do not include extra keys (no "example" singular — use "examples").
-- Prefer one clear entry per distinct meaning; deduplicate overlapping senses.`;
+- Prefer one clear entry per distinct meaning; deduplicate overlapping senses.
+- If Current meanings JSON is present, improve that JSON: fix gaps, add missing senses/examples/synonyms/antonyms, keep valid existing senses.`;
 }
 
 export async function copyTextToClipboard(text: string): Promise<void> {

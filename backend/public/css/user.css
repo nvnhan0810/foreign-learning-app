@@ -385,6 +385,41 @@ a {
   border-radius: 8px;
 }
 
+.meanings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.meanings-mode-toggle {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.meanings-mode-toggle .btn[aria-pressed='true'] {
+  background: var(--primary);
+  color: #fff;
+}
+
+.lookup-json-wrap {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lookup-json-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  min-height: 220px;
+  resize: vertical;
+}
+
 .form-group {
   margin-bottom: 16px;
 }

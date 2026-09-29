@@ -93,7 +93,20 @@ final class SaveUserVocabularyHandler implements CommandHandler
 
         $existing = $this->vocabularies->findByUserAndWord($command->userId, $word);
         if ($existing !== null) {
-            $vocabulary = $this->vocabularies->findForUser($command->userId, (int) $existing->id) ?? $existing;
+            $vocabulary = $this->vocabularies->save(new UserVocabulary(
+                id: $existing->id,
+                userId: $command->userId,
+                dictionaryEntryId: $entryId,
+                word: $word,
+                phonetic: $command->phonetic ?? $existing->phonetic,
+                meanings: $meanings,
+                examples: $existing->examples,
+                timesQuizzed: $existing->timesQuizzed,
+                lastQuizzedAt: $existing->lastQuizzedAt,
+                lastCorrectAt: $existing->lastCorrectAt,
+                createdAt: $existing->createdAt,
+                updatedAt: $existing->updatedAt,
+            ));
 
             return [
                 'vocabulary' => $vocabulary,

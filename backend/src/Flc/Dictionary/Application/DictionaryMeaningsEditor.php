@@ -128,20 +128,23 @@ final class DictionaryMeaningsEditor
 
     /**
      * @param  list<string>  $learnerContext  Short notes (usage, meaning, comparison, etc.)
+     * @param  list<array<string, mixed>>  $currentMeanings  Existing meanings to include in the prompt
      */
     public static function aiPrompt(
         string $word,
         array $learnerContext = [],
+        array $currentMeanings = [],
     ): string {
         $word = trim($word);
         $label = $word !== '' ? $word : '{WORD}';
         $contextBlock = self::formatLearnerContextBlock($learnerContext);
+        $currentBlock = self::formatCurrentMeaningsBlock($currentMeanings);
 
         return <<<PROMPT
 You are helping curate an English dictionary entry for FLC.
 
 Word / phrase: {$label}
-
+{$currentBlock}
 Return ONLY a valid JSON array (no markdown fences, no commentary) of meanings in this exact schema:
 
 [
@@ -164,10 +167,31 @@ Rules:
 - Include multiple meanings when the word has distinct senses.
 - Do not include extra keys (no "example" singular — use "examples").
 - Prefer one clear entry per distinct meaning; deduplicate overlapping senses.
+- If Current meanings JSON is present, improve that JSON: fix gaps, add missing senses/examples/synonyms/antonyms, keep valid existing senses.
 - If "Learner context from prior study" is present, synthesize that history into the JSON (usage, nuance, situations, comparisons). Fold useful points into definitions/examples — do not invent Vietnamese glosses.
 
 {$contextBlock}
 PROMPT;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $meanings
+     */
+    private static function formatCurrentMeaningsBlock(array $meanings): string
+    {
+        $payload = self::toPromptMeaningsPayload($meanings);
+        if ($payload === []) {
+            return '';
+        }
+
+        $json = self::toPrettyJson($payload);
+
+        return <<<BLOCK
+
+Current meanings JSON (starting point — refine, do not discard useful senses without reason):
+{$json}
+
+BLOCK;
     }
 
     /**

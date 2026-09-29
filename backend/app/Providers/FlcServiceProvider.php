@@ -30,7 +30,11 @@ use Flc\Dictionary\Application\Repository\DictionaryEntryRepository;
 use Flc\Dictionary\Application\SpellSuggestionGateway;
 use Flc\Dictionary\Infrastructure\Http\HttpDatamuseRelatedWordsGateway;
 use Flc\Dictionary\Infrastructure\Http\HttpDatamuseSpellSuggestionGateway;
-use Flc\Dictionary\Infrastructure\Http\HttpFreeDictionaryGateway;
+use Flc\Dictionary\Infrastructure\Http\DictionaryApiDevSource;
+use Flc\Dictionary\Infrastructure\Http\DictionarySourceLock;
+use Flc\Dictionary\Infrastructure\Http\FailoverFreeDictionaryGateway;
+use Flc\Dictionary\Infrastructure\Http\FreeDictionaryApiSource;
+use Flc\Dictionary\Infrastructure\Http\SuvankarDictionarySource;
 use Flc\Dictionary\Infrastructure\Persistence\EloquentDictionaryEntryRepository;
 use Flc\Identity\Application\Command\CreateAllowedEmail;
 use Flc\Identity\Application\Command\DeleteAllowedEmail;
@@ -166,7 +170,17 @@ class FlcServiceProvider extends ServiceProvider
         $this->app->bind(PushNotifier::class, FcmPushNotifier::class);
         $this->app->bind(AppSettingsRepository::class, EloquentAppSettingsRepository::class);
         $this->app->bind(AllowedEmailRepository::class, EloquentAllowedEmailRepository::class);
-        $this->app->bind(FreeDictionaryGateway::class, HttpFreeDictionaryGateway::class);
+        $this->app->singleton(DictionarySourceLock::class);
+        $this->app->bind(FreeDictionaryGateway::class, function ($app) {
+            return new FailoverFreeDictionaryGateway(
+                [
+                    $app->make(DictionaryApiDevSource::class),
+                    $app->make(FreeDictionaryApiSource::class),
+                    $app->make(SuvankarDictionarySource::class),
+                ],
+                $app->make(DictionarySourceLock::class),
+            );
+        });
         $this->app->bind(RelatedWordsGateway::class, HttpDatamuseRelatedWordsGateway::class);
         $this->app->bind(SpellSuggestionGateway::class, HttpDatamuseSpellSuggestionGateway::class);
         $this->app->bind(WordChatAgentRepository::class, EloquentWordChatAgentRepository::class);

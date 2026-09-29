@@ -31,6 +31,7 @@ class LookupController extends Controller
             'word' => old('word', session('lookup_word', $prefill)),
             'saved' => (bool) session('lookup_saved', false),
             'savedVocabularyId' => session('lookup_saved_vocabulary_id'),
+            'draft' => (bool) session('lookup_draft', false),
         ]);
     }
 
@@ -96,6 +97,16 @@ class LookupController extends Controller
             return $this->redirectToLookupAfterSave($data, 'Word saved.', is_array($lookup) ? $lookup : null);
         }
 
+        if ($result['content_updated'] ?? false) {
+            $lookup = $this->queries->ask(new LookupWord($word));
+
+            return $this->redirectToLookupAfterSave(
+                $data,
+                'Meanings updated.',
+                is_array($lookup) ? $lookup : null,
+            );
+        }
+
         if ($result['backfilled'] ?? false) {
             $lookup = $this->queries->ask(new LookupWord($word));
 
@@ -138,7 +149,8 @@ class LookupController extends Controller
             ->with('lookup_saved', true)
             ->with('lookup_saved_vocabulary_id', is_array($savedVocab) ? ($savedVocab['id'] ?? null) : null)
             ->with('lookup_word', $data['word'])
-            ->with('lookup_result', $lookup);
+            ->with('lookup_result', $lookup)
+            ->with('lookup_draft', false);
     }
 
     private function redirectForWord(
@@ -160,14 +172,29 @@ class LookupController extends Controller
         $result = $this->queries->ask(new LookupWord($normalizedWord));
 
         if (! $result) {
+            $draft = [
+                'word' => $normalizedWord,
+                'phonetic' => null,
+                'audio_url' => null,
+                'meanings' => [],
+                'synonyms' => [],
+                'antonyms' => [],
+                'source' => null,
+                'curated' => false,
+            ];
+
             return redirect()->route('user.home.lookup')
-                ->withInput(['word' => $displayWord])
-                ->with('error', 'Word not found.');
+                ->with('lookup_word', $displayWord)
+                ->with('lookup_result', $draft)
+                ->with('lookup_draft', true)
+                ->with('lookup_saved', is_array($savedVocab))
+                ->with('lookup_saved_vocabulary_id', is_array($savedVocab) ? ($savedVocab['id'] ?? null) : null);
         }
 
         return redirect()->route('user.home.lookup')
             ->with('lookup_word', $displayWord)
             ->with('lookup_result', $result)
+            ->with('lookup_draft', false)
             ->with('lookup_saved', is_array($savedVocab))
             ->with('lookup_saved_vocabulary_id', is_array($savedVocab) ? ($savedVocab['id'] ?? null) : null);
     }

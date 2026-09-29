@@ -118,7 +118,11 @@ class DictionaryController extends Controller
                 DictionaryMeaningsEditor::toPrettyJson(DictionaryMeaningsEditor::fromFormRows($formMeanings))
             ),
             'meaningsEditor' => old('meanings_editor', DictionaryMeaningsEditor::MODE_FORM),
-            'meaningsAiPrompt' => DictionaryMeaningsEditor::aiPrompt($dictionary->word),
+            'meaningsAiPrompt' => DictionaryMeaningsEditor::aiPrompt(
+                $dictionary->word,
+                [],
+                DictionaryMeaningsEditor::fromFormRows($formMeanings),
+            ),
             'entrySynonymsText' => $dictionary->synonyms->whereNull('dictionary_meaning_id')->pluck('term')->implode(', '),
             'entryAntonymsText' => $dictionary->antonyms->whereNull('dictionary_meaning_id')->pluck('term')->implode(', '),
         ]);

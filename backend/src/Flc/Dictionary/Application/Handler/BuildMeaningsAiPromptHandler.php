@@ -54,7 +54,7 @@ final class BuildMeaningsAiPromptHandler implements QueryHandler
 
         return [
             'word' => $word,
-            'prompt' => DictionaryMeaningsEditor::aiPrompt($word, $learnerContext),
+            'prompt' => DictionaryMeaningsEditor::aiPrompt($word, $learnerContext, $normalized),
             'current_meanings' => $normalized,
             'meanings_json' => DictionaryMeaningsEditor::toPrettyJson($normalized),
             'learner_context' => $learnerContext,
