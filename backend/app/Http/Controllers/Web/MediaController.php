@@ -123,6 +123,37 @@ class MediaController extends Controller
         ]);
     }
 
+    public function editTranscript(Request $request, MediaItem $mediaItem): Response
+    {
+        if ($mediaItem->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $segments = $this->ensureTranscriptSegments($mediaItem);
+
+        if ($segments === null && is_string($mediaItem->transcript) && trim($mediaItem->transcript) !== '') {
+            $segments = [[
+                'start' => 0.0,
+                'end' => 2.0,
+                'text' => trim($mediaItem->transcript),
+            ]];
+        }
+
+        return Inertia::render('Media/EditTranscript', [
+            'item' => [
+                'id' => $mediaItem->id,
+                'title' => $mediaItem->title,
+                'type' => $mediaItem->type,
+                'source_id' => $mediaItem->source_id,
+                'url' => $mediaItem->url,
+                'difficulty' => $mediaItem->difficulty,
+                'difficulty_label' => $mediaItem->difficultyLabel(),
+                'transcript' => $mediaItem->transcript,
+                'transcript_segments' => $segments ?? [],
+            ],
+        ]);
+    }
+
     public function updateTranscript(Request $request, MediaItem $mediaItem): RedirectResponse|JsonResponse
     {
         if ($mediaItem->user_id !== $request->user()->id) {
@@ -130,25 +161,58 @@ class MediaController extends Controller
         }
 
         $validated = $request->validate([
-            'transcript' => ['nullable', 'string', 'max:100000'],
+            'segments' => ['required', 'array', 'max:5000'],
+            'segments.*.start' => ['required', 'numeric', 'min:0'],
+            'segments.*.end' => ['required', 'numeric', 'min:0'],
+            'segments.*.text' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $transcript = isset($validated['transcript']) ? trim((string) $validated['transcript']) : null;
-        if ($transcript === '') {
-            $transcript = null;
+        /** @var list<array{start: float|int|string, end: float|int|string, text: string}> $rawSegments */
+        $rawSegments = $validated['segments'];
+        $segments = [];
+
+        foreach ($rawSegments as $item) {
+            $text = trim((string) $item['text']);
+            if ($text === '') {
+                continue;
+            }
+
+            $start = round((float) $item['start'], 3);
+            $end = round((float) $item['end'], 3);
+
+            if ($end <= $start) {
+                $end = round($start + 0.01, 3);
+            }
+
+            $segments[] = [
+                'start' => $start,
+                'end' => $end,
+                'text' => $text,
+            ];
         }
+
+        usort(
+            $segments,
+            static fn (array $a, array $b): int => $a['start'] <=> $b['start'],
+        );
+
+        $transcript = $segments === []
+            ? null
+            : implode(' ', array_map(
+                static fn (array $segment): string => $segment['text'],
+                $segments,
+            ));
 
         $mediaItem->update([
             'transcript' => $transcript,
-            // Manual edits are plain text — drop timed cues until captions are re-fetched.
-            'transcript_segments' => null,
+            'transcript_segments' => $segments === [] ? null : $segments,
         ]);
 
         if ($request->expectsJson()) {
             return response()->json([
                 'data' => [
                     'transcript' => $mediaItem->transcript,
-                    'transcript_segments' => null,
+                    'transcript_segments' => $mediaItem->transcript_segments,
                 ],
                 'message' => 'Transcript saved.',
             ]);

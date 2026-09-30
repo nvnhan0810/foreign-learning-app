@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { appPath } from '@/path';
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import YouTubeSyncedPlayer from '@/Components/media/YouTubeSyncedPlayer.vue';
@@ -49,13 +49,8 @@ const youtubeThumbUrl = computed((): string | null => {
     return `https://i.ytimg.com/vi/${props.item.source_id}/hqdefault.jpg`;
 });
 
-const editing = ref(false);
 const currentTime = ref(0);
 const playerRef = ref<InstanceType<typeof YouTubeSyncedPlayer> | null>(null);
-
-const transcriptForm = useForm({
-    transcript: props.item.transcript || '',
-});
 
 const segments = computed((): TranscriptSegment[] =>
     parseTranscriptSegments(props.item.transcript_segments),
@@ -84,24 +79,6 @@ const canEmbedYoutube = computed(
     (): boolean =>
         props.item.type === 'youtube' && Boolean(props.item.source_id) && !isFlcApp.value,
 );
-
-function startEdit(): void {
-    editing.value = true;
-    transcriptForm.transcript = props.item.transcript || '';
-}
-
-function cancelEdit(): void {
-    editing.value = false;
-    transcriptForm.transcript = props.item.transcript || '';
-}
-
-function saveTranscript(): void {
-    transcriptForm.put(`/home/media/${props.item.id}/transcript`, {
-        onSuccess: () => {
-            editing.value = false;
-        },
-    });
-}
 
 function onPlayerTimeUpdate(seconds: number): void {
     currentTime.value = seconds;
@@ -165,29 +142,17 @@ function onTranscriptSeek(seconds: number): void {
                     <div class="transcript-panel-head">
                         <h2 class="transcript-panel-title">Transcript</h2>
                         <div class="transcript-panel-actions">
-                            <template v-if="!editing">
-                                <button type="button" class="btn btn-sm btn-secondary" @click="startEdit">
-                                    {{ item.transcript ? 'Edit' : 'Add' }}
-                                </button>
-                            </template>
-                            <template v-else>
-                                <button
-                                    type="button"
-                                    class="btn btn-sm"
-                                    :disabled="transcriptForm.processing"
-                                    @click="saveTranscript"
-                                >
-                                    Save
-                                </button>
-                                <button type="button" class="btn btn-sm btn-secondary" @click="cancelEdit">
-                                    Cancel
-                                </button>
-                            </template>
+                            <Link
+                                :href="appPath(`/home/media/${item.id}/transcript/edit`)"
+                                class="btn btn-sm btn-secondary"
+                            >
+                                {{ item.transcript || hasTimedTranscript ? 'Edit' : 'Add' }}
+                            </Link>
                         </div>
                     </div>
 
                     <div class="transcript-scroll-panel">
-                        <div class="transcript-view" :hidden="editing">
+                        <div class="transcript-view">
                             <TimedTranscriptList
                                 v-if="hasTimedTranscript"
                                 :segments="segments"
@@ -197,14 +162,6 @@ function onTranscriptSeek(seconds: number): void {
                             <div v-else-if="item.transcript" class="transcript-text">{{ item.transcript }}</div>
                             <p v-else class="muted transcript-empty">No transcript yet.</p>
                         </div>
-                        <form v-show="editing" class="transcript-form" @submit.prevent="saveTranscript">
-                            <textarea
-                                v-model="transcriptForm.transcript"
-                                class="transcript-textarea"
-                                placeholder="Enter the video or audio transcript..."
-                                spellcheck="false"
-                            />
-                        </form>
                     </div>
                 </section>
             </div>

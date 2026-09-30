@@ -57,6 +57,7 @@ Route::name('user.')->middleware(\App\Http\Middleware\DetectFlcMobileApp::class)
             Route::post('media/youtube/preview', [MediaController::class, 'previewYouTube'])->name('media.youtube.preview');
             Route::post('media/youtube', [MediaController::class, 'storeYouTube'])->name('media.youtube.store');
             Route::get('media/{mediaItem}/audio', [MediaController::class, 'audio'])->name('media.audio');
+            Route::get('media/{mediaItem}/transcript/edit', [MediaController::class, 'editTranscript'])->name('media.transcript.edit');
             Route::get('media/{mediaItem}', [MediaController::class, 'show'])->name('media.show');
             Route::put('media/{mediaItem}/transcript', [MediaController::class, 'updateTranscript'])->name('media.transcript');
             Route::delete('media/{mediaItem}', [MediaController::class, 'destroy'])->name('media.destroy');

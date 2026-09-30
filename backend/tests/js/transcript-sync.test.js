@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { findActiveSegmentIndex, parseTranscriptSegments } from '../../resources/js/lib/transcript-sync.ts';
+import {
+    findActiveSegmentIndex,
+    parseClock,
+    parseTranscriptSegments,
+} from '../../resources/js/lib/transcript-sync.ts';
 
 describe('findActiveSegmentIndex', () => {
     const segments = [
@@ -34,5 +38,14 @@ describe('parseTranscriptSegments', () => {
         ]);
 
         assert.deepEqual(parsed, [{ start: 1, end: 2, text: 'ok' }]);
+    });
+});
+
+describe('parseClock', () => {
+    it('parses mm:ss.mmm and plain seconds', () => {
+        assert.equal(parseClock('12.5'), 12.5);
+        assert.equal(parseClock('1:02.500'), 62.5);
+        assert.equal(parseClock('1:02'), 62);
+        assert.equal(parseClock('bad'), null);
     });
 });
