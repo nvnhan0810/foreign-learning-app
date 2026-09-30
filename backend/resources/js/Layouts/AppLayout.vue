@@ -2,6 +2,7 @@
 import { appPath } from '@/path';
 import { computed, onMounted, onUnmounted, useSlots, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import PullToRefresh from '@/Components/PullToRefresh.vue';
 
 const props = defineProps({
     title: { type: String, default: 'FLC' },
@@ -80,6 +81,8 @@ onUnmounted(() => {
 
 <template>
     <div class="user-shell">
+        <PullToRefresh :disabled="gameScreen" />
+
         <template v-if="!hideHeader">
             <slot v-if="hasCustomHeader" name="header" />
             <header v-else class="user-header">

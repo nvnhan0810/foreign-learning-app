@@ -32,6 +32,54 @@
   --color-scheme: light;
 }
 
+/* Pull to refresh (PWA) */
+.ptr-indicator {
+  position: fixed;
+  top: calc(8px + var(--sat));
+  left: 50%;
+  z-index: 1200;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px var(--shadow-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.ptr-indicator.is-visible {
+  opacity: 1;
+}
+
+.ptr-indicator-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  border-top-color: var(--primary);
+  transform: rotate(0deg);
+  transition: transform 0.12s ease;
+}
+
+.ptr-indicator.is-ready .ptr-indicator-spinner {
+  transform: rotate(180deg);
+}
+
+.ptr-indicator.is-refreshing .ptr-indicator-spinner {
+  animation: ptr-spin 0.7s linear infinite;
+}
+
+@keyframes ptr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 [data-theme='dark'] {
   color-scheme: dark;
   --primary: #6b8aff;
@@ -68,6 +116,7 @@
 
 html {
   color-scheme: var(--color-scheme);
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -75,6 +124,7 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
+  overscroll-behavior-y: none;
 }
 
 a {
@@ -868,6 +918,7 @@ a {
 .user-body {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
 }
 
 .user-header-back {
