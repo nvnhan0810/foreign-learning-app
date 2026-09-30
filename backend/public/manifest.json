@@ -3,7 +3,7 @@
   "short_name": "FLC",
   "description": "Học tiếng Anh: tra từ Anh–Anh, Learn chat, từ vựng, luyện nghe, quiz và nhắc ôn tập.",
   "lang": "vi",
-  "start_url": "/home",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

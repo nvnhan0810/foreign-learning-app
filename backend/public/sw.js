@@ -1,5 +1,5 @@
 /* FLC PWA service worker — cache static shell; network for app/API. */
-const CACHE_VERSION = 'flc-v1';
+const CACHE_VERSION = 'flc-v2';
 const PRECACHE = `${CACHE_VERSION}-precache`;
 const RUNTIME = `${CACHE_VERSION}-runtime`;
 

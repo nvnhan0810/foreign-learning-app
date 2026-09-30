@@ -28,6 +28,9 @@ Route::get('/', function () {
     return redirect()->route('user.login');
 });
 
+// PWA installs may still open /home (old start_url); no bare /home route exists.
+Route::redirect('/home', '/home/lookup');
+
 Route::name('user.')->middleware(\App\Http\Middleware\DetectFlcMobileApp::class)->group(function () {
     Route::get('login', [UserAuthController::class, 'showLogin'])->name('login');
     Route::get('auth/sso', [UserAuthController::class, 'redirectSso'])->name('auth.sso');
