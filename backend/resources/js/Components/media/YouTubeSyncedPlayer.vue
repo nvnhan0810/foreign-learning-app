@@ -16,11 +16,13 @@ const props = defineProps<{
 const emit = defineEmits<{
     timeupdate: [seconds: number];
     ready: [];
+    playingchange: [isPlaying: boolean];
 }>();
 
 const hostRef = ref<HTMLElement | null>(null);
 const playerRef = ref<YoutubePlayer | null>(null);
 const pollTimer = ref<number | null>(null);
+const isPlaying = ref(false);
 
 function clearPoll(): void {
     if (pollTimer.value !== null) {
@@ -37,6 +39,14 @@ function emitCurrentTime(player: YoutubePlayer): void {
     emit('timeupdate', player.getCurrentTime());
 }
 
+function setPlaying(next: boolean): void {
+    if (isPlaying.value === next) {
+        return;
+    }
+    isPlaying.value = next;
+    emit('playingchange', next);
+}
+
 function startPoll(player: YoutubePlayer): void {
     clearPoll();
     emitCurrentTime(player);
@@ -47,10 +57,12 @@ function startPoll(player: YoutubePlayer): void {
 
 function handleStateChange(state: number, player: YoutubePlayer): void {
     if (state === YoutubePlayerState.Playing) {
+        setPlaying(true);
         startPoll(player);
         return;
     }
 
+    setPlaying(false);
     clearPoll();
     emitCurrentTime(player);
 }
@@ -81,6 +93,7 @@ async function mountPlayer(): Promise<void> {
 
 function destroyPlayer(): void {
     clearPoll();
+    setPlaying(false);
     const player = playerRef.value;
     playerRef.value = null;
 
@@ -105,6 +118,33 @@ function seekTo(seconds: number, andPlay = true): void {
     }
 }
 
+function play(): void {
+    const player = playerRef.value;
+    if (player && typeof player.playVideo === 'function') {
+        setPlaying(true);
+        player.playVideo();
+    }
+}
+
+function pause(): void {
+    const player = playerRef.value;
+    if (player && typeof player.pauseVideo === 'function') {
+        setPlaying(false);
+        player.pauseVideo();
+        emitCurrentTime(player);
+    }
+}
+
+function togglePlayback(): boolean {
+    if (isPlaying.value) {
+        pause();
+        return false;
+    }
+
+    play();
+    return true;
+}
+
 watch(
     () => props.videoId,
     async () => {
@@ -123,6 +163,10 @@ onBeforeUnmount(() => {
 
 defineExpose({
     seekTo,
+    play,
+    pause,
+    togglePlayback,
+    isPlaying,
 });
 </script>
 

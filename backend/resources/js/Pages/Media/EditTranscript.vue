@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { appPath } from '@/path';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import YouTubeSyncedPlayer from '@/Components/media/YouTubeSyncedPlayer.vue';
 import {
@@ -65,6 +65,8 @@ const rows = ref<EditRow[]>(
 const saving = ref(false);
 const formError = ref<string | null>(null);
 const currentTime = ref(0);
+const isPlaying = ref(false);
+const focusedRowIndex = ref(0);
 const playerRef = ref<InstanceType<typeof YouTubeSyncedPlayer> | null>(null);
 
 const youtubeWatchUrl = computed((): string | null => {
@@ -112,6 +114,18 @@ const previewSegments = computed((): TranscriptSegment[] => {
 const activeSegmentIndex = computed((): number =>
     findActiveSegmentIndex(previewSegments.value, currentTime.value),
 );
+
+const targetRowIndex = computed((): number => {
+    if (activeSegmentIndex.value >= 0) {
+        return activeSegmentIndex.value;
+    }
+    if (focusedRowIndex.value >= 0 && focusedRowIndex.value < rows.value.length) {
+        return focusedRowIndex.value;
+    }
+    return rows.value.length > 0 ? 0 : -1;
+});
+
+const playbackLabel = computed((): string => (isPlaying.value ? 'Pause' : 'Play'));
 
 const fieldErrors = reactive<Record<string, string>>({});
 
@@ -206,6 +220,56 @@ function useCurrentTime(index: number, field: 'start' | 'end'): void {
     clearRowError(row.id);
 }
 
+function isTypingTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) {
+        return false;
+    }
+
+    const tag = target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+        return true;
+    }
+
+    return target.isContentEditable;
+}
+
+function onPlayerTimeUpdate(seconds: number): void {
+    currentTime.value = seconds;
+}
+
+function onPlayingChange(playing: boolean): void {
+    isPlaying.value = playing;
+}
+
+function togglePlayback(): void {
+    if (!canEmbedYoutube.value) {
+        return;
+    }
+
+    playerRef.value?.togglePlayback();
+}
+
+function onGlobalKeydown(event: KeyboardEvent): void {
+    if (event.code !== 'Space' && event.key !== ' ') {
+        return;
+    }
+
+    if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+    }
+
+    if (isTypingTarget(event.target)) {
+        return;
+    }
+
+    if (!canEmbedYoutube.value) {
+        return;
+    }
+
+    event.preventDefault();
+    togglePlayback();
+}
+
 function seekRow(index: number): void {
     const row = rows.value[index];
     if (!row) {
@@ -220,9 +284,17 @@ function seekRow(index: number): void {
     playerRef.value?.seekTo(start, true);
 }
 
-function onPlayerTimeUpdate(seconds: number): void {
-    currentTime.value = seconds;
+function focusRow(index: number): void {
+    focusedRowIndex.value = index;
 }
+
+onMounted(() => {
+    window.addEventListener('keydown', onGlobalKeydown);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onGlobalKeydown);
+});
 
 function save(): void {
     const segments = validateRows();
@@ -295,11 +367,27 @@ function save(): void {
                         :video-id="item.source_id"
                         :title="item.title"
                         @timeupdate="onPlayerTimeUpdate"
+                        @playingchange="onPlayingChange"
                     />
                     <p v-else class="muted media-transcript-edit-player-empty">
                         No embedded player for this media.
                     </p>
-                    <p class="media-transcript-edit-clock muted">
+                    <div v-if="canEmbedYoutube" class="media-transcript-edit-playback">
+                        <button
+                            type="button"
+                            class="btn btn-sm"
+                            :aria-pressed="isPlaying"
+                            @click="togglePlayback"
+                        >
+                            {{ playbackLabel }}
+                        </button>
+                        <p class="media-transcript-edit-clock muted">
+                            Now: {{ formatClockPrecise(currentTime) }}
+                            <span aria-hidden="true"> · </span>
+                            Space = play/pause
+                        </p>
+                    </div>
+                    <p v-else class="media-transcript-edit-clock muted">
                         Now: {{ formatClockPrecise(currentTime) }}
                     </p>
                 </aside>
@@ -313,9 +401,11 @@ function save(): void {
                             :key="row.id"
                             class="media-transcript-edit-row"
                             :class="{
-                                'is-active': index === activeSegmentIndex,
+                                'is-active': index === activeSegmentIndex || index === targetRowIndex,
                                 'is-invalid': Boolean(fieldErrors[row.id]),
                             }"
+                            @focusin="focusRow(index)"
+                            @pointerdown="focusRow(index)"
                         >
                             <div class="media-transcript-edit-times">
                                 <label class="media-transcript-edit-field">
