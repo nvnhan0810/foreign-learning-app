@@ -4,94 +4,39 @@
   <img src="docs/images/app-icon.png" alt="FLC app icon" width="120" />
 </p>
 
-Chrome Extension + Flutter mobile + Laravel API để học tiếng Anh: tra từ Anh–Anh, **chat học từ (Learn)**, lưu từ vựng, luyện nghe, quiz và nhắc ôn tập. **Một tài khoản** — dữ liệu đồng bộ giữa extension và app.
+Chrome Extension + Flutter mobile + Laravel API để học tiếng Anh: tra từ Anh–Anh, lưu từ vựng, luyện nghe, quiz và nhắc ôn tập. **Một tài khoản** — dữ liệu đồng bộ giữa extension và app.
 
 ---
 
 ## Flow học tiếng Anh
 
-FLC xoay quanh vòng lặp **gặp từ → hiểu nghĩa → lưu lại → nghe → ôn bằng quiz**. Trên web/mobile thêm bước **hỏi đáp trong Learn chat**; câu trả lời đáng nhớ được lưu thành **learning insights** để đưa vào quiz và game. Extension vẫn tập trung **tra từ nhanh** trên trang (không chat).
+FLC xoay quanh vòng lặp **gặp từ → hiểu nghĩa → lưu lại → nghe → ôn bằng quiz**. Có thể **Copy prompt** để nhờ AI ngoài app điền meanings JSON. Extension tập trung **tra từ nhanh** trên trang.
 
 ```mermaid
 flowchart LR
-  A[Gặp từ tiếng Anh] --> B[Tra Anh–Anh / Learn chat]
+  A[Gặp từ tiếng Anh] --> B[Tra Anh–Anh / Copy prompt]
   B --> C[Lưu từ vựng]
   C --> D[Luyện nghe]
   D --> E[Quiz / Scramble / Listening exam]
   E --> C
-  B --> I[Learning insights]
-  I --> E
 ```
 
 | Bước | Chrome extension | Web / mobile app |
 |------|------------------|------------------|
-| **Tra từ** | Bôi đen → **Tra từ với FLC**, hoặc popup tab Tra từ (lemma resolve) | Tab **Learn** — chat hỏi đáp từ / ngữ pháp / usage |
+| **Tra từ** | Bôi đen → **Tra từ với FLC**, hoặc popup tab Tra từ (lemma resolve) | Tab **Lookup** — tra từ + Copy prompt / JSON meanings |
 | **Lưu từ** | Tab **Từ của tôi** | **Từ vựng** (đồng bộ) |
 | **Nghe** | Thêm link YouTube/audio; **listening quiz** | Tab **Nghe** — YouTube/MP3, listening quiz / exam |
-| **Quiz** | Tab **Quiz**, notification Chrome | **Quiz** + **Scramble**; insight từ Learn chat ưu tiên câu hỏi |
+| **Quiz** | Tab **Quiz**, notification Chrome | **Quiz** + **Scramble** |
 | **Tiến độ** | Options / sync | **Cá nhân** — thống kê, lịch sử |
 
-> Tra **từ điển Anh–Anh**, không dịch Việt. Cần **≥ 4 từ đã lưu** để làm vocabulary quiz (MCQ). Insight từ chat chỉ tạo câu hỏi khi từ đó **đã nằm trong từ vựng** (hoặc bạn lưu từ trước khi practice).
-
-### Learn chat → Quiz / Game / Exam
-
-Trang **Learn** (`/home/lookup`) là chat SSE với AI tutor (Cursor agent trên server). Mỗi lượt hỏi–đáp có thể sinh **learning insight** — bản tóm tắt ngắn, phù hợp làm prompt ôn tập.
-
-```mermaid
-sequenceDiagram
-  participant U as User
-  participant W as Learn chat UI
-  participant API as Word Chat API
-  participant DB as vocabulary_learning_insights
-  participant Q as Quiz / Scramble
-
-  U->>W: "What does outlet mean here?"
-  W->>API: POST /api/word-chat/messages
-  API-->>W: SSE stream (assistant text)
-  API->>DB: Extract + save insights
-  API-->>W: event insights + saved
-  W->>U: Insight chip + "Practice in quiz"
-  U->>Q: /home/quiz/play?insight_id=…
-  Q->>DB: insight_to_word question
-```
-
-**1. Chat → insight (tự động sau mỗi reply assistant)**
-
-| Bước | Chi tiết |
-|------|----------|
-| Gửi tin | `POST /api/word-chat/messages` → SSE `GET /api/word-chat/stream/{runId}` |
-| Trích insight | `WordChatInsightExtractor`: parse khối JSON cuối reply (`meaning`, `usage`, `context`, `grammar`, …) hoặc rule fallback nếu không có JSON |
-| Lưu | Bảng `vocabulary_learning_insights` — gắn `user_id`, `word`, `content`, `source_message_id`; link `vocabulary_id` nếu từ đã lưu |
-| UI | Bubble assistant hiện chip insight + link **Practice in quiz** |
-
-**2. Insight → Quiz (vocabulary MCQ)**
-
-| Cách vào | Hành vi |
-|----------|---------|
-| Bấm **Practice in quiz** trên Learn | Mở `/home/quiz/play?autostart=1&insight_id={id}` |
-| Quiz thường (Play) | ~35% câu hỏi random ưu tiên insight (`insight_to_word`: prompt = nội dung insight, đáp án = từ vựng) |
-| API | `GET /api/quiz/next?insight_id=` · ghi nhận dùng insight qua `POST /api/quiz/attempts` (`insight_id` optional) |
-
-Cần **≥ 4 từ đã lưu** để có đủ distractors cho MCQ. Insight về từ chưa lưu vẫn được lưu; practice quiz khi từ đã có trong My Dictionary.
-
-**3. Insight → Scramble (game)**
-
-Khi xin hint trong **Scramble**, backend ưu tiên `content` của insight mới nhất cho từ đó thay vì chỉ definition dictionary (`GET /api/puzzle/scramble/hint`).
-
-**4. Listening exam (tách pipeline)**
-
-**Kiểm tra nghe** (quiz / test / exam trên media YouTube/MP3) dùng câu hỏi AI sinh từ **transcript bài nghe** — **không** lấy trực tiếp từ Learn chat. Hai luồng song song: chat ôn **từ vựng**, listening ôn **nghe hiểu**.
-
-**API / tài liệu kỹ thuật:** [docs/WORD_CHAT_AND_LOOKUP_RESOLVE.md](docs/WORD_CHAT_AND_LOOKUP_RESOLVE.md) · `GET /api/word-chat/insights?word=`
+> Tra **từ điển Anh–Anh**, không dịch Việt. Cần **≥ 4 từ đã lưu** để làm vocabulary quiz (MCQ).
 
 ### Nên dùng extension hay app?
 
 | Tình huống | Gợi ý |
 |------------|--------|
 | Đọc web, docs, forum trên Chrome | **Extension** (tra nhanh, lemma resolve) |
-| Hỏi ngữ cảnh, usage, ngữ pháp có giải thích | **Web/mobile — Learn chat** |
 | Học trên điện thoại, nhận push nhắc quiz | **Mobile app** (WebView → web app) |
-| Ôn lại điều vừa hỏi trong chat | **Learn** → chip insight → **Practice in quiz** / Scramble |
 | Tự thêm link YouTube nghe lại + làm listening quiz | **Extension** hoặc **Mobile** |
 | Bài nghe + listening quiz / exam | **Mobile app** hoặc web **Nghe** |
 
@@ -149,7 +94,7 @@ Bôi đen từ → chuột phải **Tra từ với FLC**.
 
 | Thư mục | Mô tả |
 |---------|--------|
-| `docs/` | Tài liệu + hình minh họa ([ARCHITECTURE_DDD_CQRS](docs/ARCHITECTURE_DDD_CQRS.md), [DICTIONARY_DB](docs/DICTIONARY_DB.md), [WORD_CHAT_AND_LOOKUP_RESOLVE](docs/WORD_CHAT_AND_LOOKUP_RESOLVE.md)) |
+| `docs/` | Tài liệu + hình minh họa ([ARCHITECTURE_DDD_CQRS](docs/ARCHITECTURE_DDD_CQRS.md), [DICTIONARY_DB](docs/DICTIONARY_DB.md)) |
 | `backend/` | Laravel API + Admin (`app/` delivery, `src/Flc/` domain) |
 | `extension/` | Chrome Extension MV3 |
 | `mobile/` | Flutter app (iOS / Android) |
@@ -175,7 +120,7 @@ API mặc định: **http://localhost:8080/api**
 
 - Web user (mặc định)
 
-**http://localhost:8080** — Learn chat, từ vựng, nghe, quiz, scramble, hồ sơ (đăng nhập Google riêng).
+**http://localhost:8080** — Lookup, từ vựng, nghe, quiz, scramble, hồ sơ (đăng nhập Google riêng).
 
 - Trang Admin
 
