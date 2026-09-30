@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ProcessMediaContentJob;
 use App\Models\MediaItem;
 use Flc\Media\Infrastructure\External\YouTubePreviewService;
+use Flc\Media\Infrastructure\External\YouTubeTranscriptService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class MediaController extends Controller
 {
     public function __construct(
         private readonly YouTubePreviewService $youtubePreview,
+        private readonly YouTubeTranscriptService $youtubeTranscript,
     ) {}
 
     public function index(Request $request): Response
@@ -102,6 +104,8 @@ class MediaController extends Controller
             abort(403);
         }
 
+        $segments = $this->ensureTranscriptSegments($mediaItem);
+
         return Inertia::render('Media/Show', [
             'item' => [
                 'id' => $mediaItem->id,
@@ -113,6 +117,7 @@ class MediaController extends Controller
                 'difficulty' => $mediaItem->difficulty,
                 'difficulty_label' => $mediaItem->difficultyLabel(),
                 'transcript' => $mediaItem->transcript,
+                'transcript_segments' => $segments,
                 'analysis_status' => $mediaItem->analysis_status,
             ],
         ]);
@@ -135,12 +140,15 @@ class MediaController extends Controller
 
         $mediaItem->update([
             'transcript' => $transcript,
+            // Manual edits are plain text — drop timed cues until captions are re-fetched.
+            'transcript_segments' => null,
         ]);
 
         if ($request->expectsJson()) {
             return response()->json([
                 'data' => [
                     'transcript' => $mediaItem->transcript,
+                    'transcript_segments' => null,
                 ],
                 'message' => 'Transcript saved.',
             ]);
@@ -149,6 +157,79 @@ class MediaController extends Controller
         return redirect()
             ->route('user.home.media.show', $mediaItem)
             ->with('success', 'Transcript saved.');
+    }
+
+    /**
+     * @return list<array{start: float, end: float, text: string}>|null
+     */
+    private function ensureTranscriptSegments(MediaItem $mediaItem): ?array
+    {
+        $existing = $this->normalizeSegments($mediaItem->transcript_segments);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        if ($mediaItem->type !== MediaItem::TYPE_YOUTUBE || ! $mediaItem->source_id) {
+            return null;
+        }
+
+        try {
+            $timed = $this->youtubeTranscript->fetch(
+                $mediaItem->source_id,
+                $mediaItem->language ?? 'en',
+            );
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if ($timed === null || ! $timed->hasSegments()) {
+            return null;
+        }
+
+        $updates = [
+            'transcript_segments' => $timed->segments,
+        ];
+
+        if ($mediaItem->transcript === null || trim($mediaItem->transcript) === '') {
+            $updates['transcript'] = $timed->text;
+            $mediaItem->transcript = $timed->text;
+        }
+
+        $mediaItem->update($updates);
+        $mediaItem->transcript_segments = $timed->segments;
+
+        return $timed->segments;
+    }
+
+    /**
+     * @return list<array{start: float, end: float, text: string}>|null
+     */
+    private function normalizeSegments(mixed $raw): ?array
+    {
+        if (! is_array($raw) || $raw === []) {
+            return null;
+        }
+
+        $segments = [];
+
+        foreach ($raw as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $text = isset($item['text']) ? trim((string) $item['text']) : '';
+            if ($text === '' || ! isset($item['start'], $item['end'])) {
+                continue;
+            }
+
+            $segments[] = [
+                'start' => (float) $item['start'],
+                'end' => (float) $item['end'],
+                'text' => $text,
+            ];
+        }
+
+        return $segments === [] ? null : $segments;
     }
 
     public function audio(Request $request, MediaItem $mediaItem): StreamedResponse|JsonResponse

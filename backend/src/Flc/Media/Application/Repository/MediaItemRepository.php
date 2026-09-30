@@ -11,7 +11,12 @@ interface MediaItemRepository
     public function markProcessing(int $id): void;
 
     /**
-     * @param  array{transcript?: ?string, analysis_payload?: array<string, mixed>, difficulty?: string}  $fields
+     * @param  array{
+     *     transcript?: ?string,
+     *     transcript_segments?: list<array{start: float, end: float, text: string}>|null,
+     *     analysis_payload?: array<string, mixed>,
+     *     difficulty?: string
+     * }  $fields
      */
     public function markReady(int $id, array $fields): void;
 

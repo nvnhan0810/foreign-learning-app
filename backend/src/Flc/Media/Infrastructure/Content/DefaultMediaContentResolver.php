@@ -21,6 +21,7 @@ final class DefaultMediaContentResolver implements MediaContentResolver
             return [
                 'content' => $mediaItem->transcript,
                 'source' => self::SOURCE_TRANSCRIPT,
+                'segments' => $mediaItem->transcriptSegments,
             ];
         }
 
@@ -30,10 +31,11 @@ final class DefaultMediaContentResolver implements MediaContentResolver
                 $mediaItem->language
             );
 
-            if ($transcript) {
+            if ($transcript !== null) {
                 return [
-                    'content' => $transcript,
+                    'content' => $transcript->text,
                     'source' => self::SOURCE_TRANSCRIPT,
+                    'segments' => $transcript->segments,
                 ];
             }
 

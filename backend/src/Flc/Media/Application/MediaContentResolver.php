@@ -15,7 +15,11 @@ interface MediaContentResolver
     public const SOURCE_TITLE = 'title_only';
 
     /**
-     * @return array{content: string, source: string}
+     * @return array{
+     *     content: string,
+     *     source: string,
+     *     segments?: list<array{start: float, end: float, text: string}>|null
+     * }
      */
     public function resolve(MediaItem $mediaItem): array;
 }

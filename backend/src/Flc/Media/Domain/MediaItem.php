@@ -43,6 +43,8 @@ final class MediaItem
         public readonly string $language,
         public readonly ?string $notes,
         public readonly ?string $transcript,
+        /** @var list<array{start: float, end: float, text: string}>|null */
+        public readonly ?array $transcriptSegments,
         public readonly ?string $difficulty,
         public readonly string $analysisStatus,
         /** @var array<string, mixed>|null */

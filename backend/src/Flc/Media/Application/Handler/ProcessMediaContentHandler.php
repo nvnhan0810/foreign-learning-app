@@ -57,13 +57,19 @@ final class ProcessMediaContentHandler implements CommandHandler
                 ? $this->vocabularyImporter->importFromAnalysis($mediaItem->userId, $analysis)
                 : ['imported' => 0, 'skipped' => 0, 'words' => []];
 
-            $this->mediaItems->markReady($mediaItem->id, [
+            $readyFields = [
                 'transcript' => $contentSource === MediaContentResolver::SOURCE_TRANSCRIPT
                     ? $content
                     : $mediaItem->transcript,
                 'analysis_payload' => $analysis,
                 'difficulty' => MediaItem::normalizeDifficulty($analysis['difficulty'] ?? null),
-            ]);
+            ];
+
+            if (array_key_exists('segments', $resolved)) {
+                $readyFields['transcript_segments'] = $resolved['segments'];
+            }
+
+            $this->mediaItems->markReady($mediaItem->id, $readyFields);
 
             $this->assessmentGenerator->generateQuestionBank($mediaItem->id);
 

@@ -2,6 +2,7 @@
 
 namespace Flc\Media\Infrastructure\External;
 
+use Flc\Media\Domain\TimedTranscript;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -11,7 +12,9 @@ class YouTubeTranscriptService
 
     private const WEB_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-    public function fetch(string $videoId, string $language = 'en'): ?string
+    private const DEFAULT_SEGMENT_DURATION_SECONDS = 2.0;
+
+    public function fetch(string $videoId, string $language = 'en'): ?TimedTranscript
     {
         $tracks = $this->fetchCaptionTracksViaAndroidPlayer($videoId)
             ?? $this->fetchCaptionTracksFromWatchPage($videoId);
@@ -202,7 +205,7 @@ class YouTubeTranscriptService
         return null;
     }
 
-    private function parseCaptions(string $body): ?string
+    private function parseCaptions(string $body): ?TimedTranscript
     {
         if (trim($body) === '') {
             return null;
@@ -221,7 +224,7 @@ class YouTubeTranscriptService
         return $this->parseCaptionXml($body);
     }
 
-    private function parseCaptionJson(string $json): ?string
+    private function parseCaptionJson(string $json): ?TimedTranscript
     {
         $data = json_decode($json, true);
 
@@ -229,37 +232,91 @@ class YouTubeTranscriptService
             return null;
         }
 
+        /** @var list<array{start: float, end: float, text: string}> $segments */
         $segments = [];
 
         foreach ($data['events'] ?? [] as $event) {
+            if (! is_array($event)) {
+                continue;
+            }
+
             $text = '';
 
             foreach ($event['segs'] ?? [] as $segment) {
+                if (! is_array($segment)) {
+                    continue;
+                }
+
                 $text .= $segment['utf8'] ?? '';
             }
 
-            $text = trim(preg_replace('/\s+/', ' ', $text) ?? '');
+            $text = $this->normalizeCaptionText($text);
 
-            if ($text !== '' && $text !== '\n') {
-                $segments[] = $text;
+            if ($text === '') {
+                continue;
             }
+
+            $startMs = isset($event['tStartMs']) ? (float) $event['tStartMs'] : null;
+            $durationMs = isset($event['dDurationMs']) ? (float) $event['dDurationMs'] : null;
+
+            if ($startMs === null) {
+                continue;
+            }
+
+            $start = $startMs / 1000.0;
+            $end = $durationMs !== null
+                ? $start + ($durationMs / 1000.0)
+                : $start + self::DEFAULT_SEGMENT_DURATION_SECONDS;
+
+            $segments[] = [
+                'start' => $start,
+                'end' => $end,
+                'text' => $text,
+            ];
         }
 
-        if ($segments === []) {
-            return null;
-        }
-
-        return implode(' ', $segments);
+        return $this->finalizeSegments($segments);
     }
 
-    private function parseCaptionVtt(string $vtt): ?string
+    private function parseCaptionVtt(string $vtt): ?TimedTranscript
     {
+        /** @var list<array{start: float, end: float, text: string}> $segments */
         $segments = [];
+        $lines = preg_split('/\R/', $vtt) ?: [];
+        $pendingStart = null;
+        $pendingEnd = null;
+        $pendingText = [];
 
-        foreach (preg_split('/\R/', $vtt) ?: [] as $line) {
+        $flush = function () use (&$segments, &$pendingStart, &$pendingEnd, &$pendingText): void {
+            if ($pendingStart === null || $pendingEnd === null) {
+                $pendingStart = null;
+                $pendingEnd = null;
+                $pendingText = [];
+
+                return;
+            }
+
+            $text = $this->normalizeCaptionText(implode(' ', $pendingText));
+
+            if ($text !== '') {
+                $segments[] = [
+                    'start' => $pendingStart,
+                    'end' => $pendingEnd,
+                    'text' => $text,
+                ];
+            }
+
+            $pendingStart = null;
+            $pendingEnd = null;
+            $pendingText = [];
+        };
+
+        foreach ($lines as $line) {
             $line = trim($line);
 
-            if ($line === '' || str_starts_with($line, 'WEBVTT') || str_contains($line, '-->')) {
+            if ($line === '' || str_starts_with($line, 'WEBVTT') || str_starts_with($line, 'NOTE')) {
+                $flush();
+
                 continue;
             }
 
@@ -267,38 +324,136 @@ class YouTubeTranscriptService
                 continue;
             }
 
-            $segments[] = $line;
+            if (preg_match('/^(\d{1,2}:)?\d{2}:\d{2}[.,]\d{3}\s+-->\s+(\d{1,2}:)?\d{2}:\d{2}[.,]\d{3}/', $line)) {
+                $flush();
+                $parts = preg_split('/\s+-->\s+/', $line) ?: [];
+                $startRaw = $parts[0] ?? '';
+                $endRaw = preg_replace('/\s+.*$/', '', $parts[1] ?? '') ?? '';
+                $pendingStart = $this->parseVttTimestamp($startRaw);
+                $pendingEnd = $this->parseVttTimestamp($endRaw);
+
+                continue;
+            }
+
+            if ($pendingStart !== null) {
+                $pendingText[] = $line;
+            }
         }
 
-        if ($segments === []) {
-            return null;
-        }
+        $flush();
 
-        return implode(' ', $segments);
+        return $this->finalizeSegments($segments);
     }
 
-    private function parseCaptionXml(string $xml): ?string
+    private function parseCaptionXml(string $xml): ?TimedTranscript
     {
         $document = new \DOMDocument;
         libxml_use_internal_errors(true);
         $document->loadXML($xml);
         libxml_clear_errors();
 
+        /** @var list<array{start: float, end: float, text: string}> $segments */
         $segments = [];
 
         foreach ($document->getElementsByTagName('text') as $node) {
-            $text = html_entity_decode($node->textContent ?? '', ENT_QUOTES | ENT_HTML5);
-            $text = trim(preg_replace('/\s+/', ' ', $text) ?? '');
-
-            if ($text !== '') {
-                $segments[] = $text;
+            if (! $node instanceof \DOMElement) {
+                continue;
             }
+
+            $text = html_entity_decode($node->textContent ?? '', ENT_QUOTES | ENT_HTML5);
+            $text = $this->normalizeCaptionText($text);
+
+            if ($text === '') {
+                continue;
+            }
+
+            $startAttr = $node->getAttribute('start');
+            $durAttr = $node->getAttribute('dur');
+
+            if ($startAttr === '') {
+                continue;
+            }
+
+            $start = (float) $startAttr;
+            $end = $durAttr !== ''
+                ? $start + (float) $durAttr
+                : $start + self::DEFAULT_SEGMENT_DURATION_SECONDS;
+
+            $segments[] = [
+                'start' => $start,
+                'end' => $end,
+                'text' => $text,
+            ];
         }
 
+        return $this->finalizeSegments($segments);
+    }
+
+    /**
+     * @param  list<array{start: float, end: float, text: string}>  $segments
+     */
+    private function finalizeSegments(array $segments): ?TimedTranscript
+    {
         if ($segments === []) {
             return null;
         }
 
-        return implode(' ', $segments);
+        $normalized = [];
+
+        foreach ($segments as $index => $segment) {
+            $start = $segment['start'];
+            $end = $segment['end'];
+            $next = $segments[$index + 1] ?? null;
+
+            if ($end <= $start) {
+                $end = $next !== null
+                    ? max($start + 0.01, $next['start'])
+                    : $start + self::DEFAULT_SEGMENT_DURATION_SECONDS;
+            }
+
+            if ($next !== null && $end > $next['start']) {
+                $end = $next['start'];
+            }
+
+            $normalized[] = [
+                'start' => round($start, 3),
+                'end' => round(max($start + 0.01, $end), 3),
+                'text' => $segment['text'],
+            ];
+        }
+
+        $text = implode(' ', array_map(
+            static fn (array $segment): string => $segment['text'],
+            $normalized,
+        ));
+
+        return new TimedTranscript($text, $normalized);
+    }
+
+    private function normalizeCaptionText(string $text): string
+    {
+        $text = trim(preg_replace('/\s+/', ' ', $text) ?? '');
+
+        if ($text === '' || $text === '\n') {
+            return '';
+        }
+
+        return $text;
+    }
+
+    private function parseVttTimestamp(string $value): ?float
+    {
+        $value = str_replace(',', '.', trim($value));
+
+        if (! preg_match('/^(?:(\d{1,2}):)?(\d{2}):(\d{2})\.(\d{3})$/', $value, $matches)) {
+            return null;
+        }
+
+        $hours = isset($matches[1]) && $matches[1] !== '' ? (int) $matches[1] : 0;
+        $minutes = (int) $matches[2];
+        $seconds = (int) $matches[3];
+        $millis = (int) $matches[4];
+
+        return ($hours * 3600) + ($minutes * 60) + $seconds + ($millis / 1000.0);
     }
 }

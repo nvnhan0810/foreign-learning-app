@@ -55,6 +55,7 @@ class MediaItem extends Model
         'analysis_status',
         'analysis_error',
         'transcript',
+        'transcript_segments',
         'analysis_payload',
         'analyzed_at',
         'question_bank_status',
@@ -72,6 +73,7 @@ class MediaItem extends Model
         return [
             'is_active' => 'boolean',
             'next_listen_at' => 'datetime',
+            'transcript_segments' => 'array',
             'analysis_payload' => 'array',
             'analyzed_at' => 'datetime',
         ];

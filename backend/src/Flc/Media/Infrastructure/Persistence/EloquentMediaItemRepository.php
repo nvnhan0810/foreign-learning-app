@@ -37,6 +37,10 @@ final class EloquentMediaItemRepository implements MediaItemRepository
             $update['transcript'] = $fields['transcript'];
         }
 
+        if (array_key_exists('transcript_segments', $fields)) {
+            $update['transcript_segments'] = $fields['transcript_segments'];
+        }
+
         if (array_key_exists('analysis_payload', $fields)) {
             $update['analysis_payload'] = $fields['analysis_payload'];
         }
@@ -108,11 +112,43 @@ final class EloquentMediaItemRepository implements MediaItemRepository
             language: $model->language ?? 'en',
             notes: $model->notes,
             transcript: $model->transcript,
+            transcriptSegments: self::normalizeTranscriptSegments($model->transcript_segments),
             difficulty: $model->difficulty,
             analysisStatus: $model->analysis_status ?? MediaItem::ANALYSIS_PENDING,
             analysisPayload: is_array($model->analysis_payload) ? $model->analysis_payload : null,
             questionBankStatus: $model->question_bank_status,
             questionBankCount: (int) $model->question_bank_count,
         );
+    }
+
+    /**
+     * @return list<array{start: float, end: float, text: string}>|null
+     */
+    private static function normalizeTranscriptSegments(mixed $raw): ?array
+    {
+        if (! is_array($raw) || $raw === []) {
+            return null;
+        }
+
+        $segments = [];
+
+        foreach ($raw as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $text = isset($item['text']) ? trim((string) $item['text']) : '';
+            if ($text === '' || ! isset($item['start'], $item['end'])) {
+                continue;
+            }
+
+            $segments[] = [
+                'start' => (float) $item['start'],
+                'end' => (float) $item['end'],
+                'text' => $text,
+            ];
+        }
+
+        return $segments === [] ? null : $segments;
     }
 }
