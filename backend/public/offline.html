@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#4361ee">
+  <title>Offline — FLC</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1419;
+      --primary: #4361ee;
+      --text: #e8eef8;
+      --muted: #9aa8bc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      background:
+        radial-gradient(40% 40% at 20% 20%, rgba(67, 97, 238, 0.35), transparent 60%),
+        var(--bg);
+      color: var(--text);
+      text-align: center;
+    }
+    img {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      margin-bottom: 1.25rem;
+    }
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+    p {
+      margin: 0 0 1.5rem;
+      color: var(--muted);
+      line-height: 1.5;
+      max-width: 28rem;
+    }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 10px;
+      padding: 0.7rem 1.2rem;
+      font: inherit;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), #3a0ca3);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="/images/android-chrome-192x192.png" alt="FLC" width="72" height="72">
+    <h1>Bạn đang offline</h1>
+    <p>FLC cần kết nối mạng để đồng bộ từ vựng, quiz và Learn chat. Kiểm tra mạng rồi thử lại.</p>
+    <button type="button" onclick="location.reload()">Thử lại</button>
+  </main>
+</body>
+</html>
