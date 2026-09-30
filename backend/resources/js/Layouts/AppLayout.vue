@@ -10,7 +10,6 @@ const props = defineProps({
     hideHeader: { type: Boolean, default: false },
     gameScreen: { type: Boolean, default: false },
     gameBg: { type: Boolean, default: false },
-    chatPage: { type: Boolean, default: false },
     backHref: { type: String, default: null },
 });
 
@@ -38,7 +37,6 @@ function syncBodyClass() {
     body.classList.toggle('user-no-header', props.hideHeader);
     body.classList.toggle('user-game', props.gameScreen);
     body.classList.toggle('user-game-bg', props.gameBg);
-    body.classList.toggle('user-chat-page', props.chatPage);
 }
 
 function applyTheme(choice) {
@@ -59,7 +57,7 @@ onMounted(() => {
 });
 
 watch(
-    () => [props.hideNav, props.hideHeader, props.gameScreen, props.gameBg, props.chatPage, isFlcApp.value],
+    () => [props.hideNav, props.hideHeader, props.gameScreen, props.gameBg, isFlcApp.value],
     syncBodyClass,
 );
 
@@ -76,7 +74,6 @@ onUnmounted(() => {
         'user-no-header',
         'user-game',
         'user-game-bg',
-        'user-chat-page',
     );
 });
 </script>

@@ -21,7 +21,6 @@ const props = defineProps({
 const answered = computed(() => props.feedback != null);
 const promptLabel = computed(() => {
     const type = props.question?.question_type || '';
-    if (type === 'insight_to_word') return 'From your Learn chat';
     if (type === 'word_to_definition') return 'Choose the meaning';
     return 'Choose the word';
 });
@@ -46,7 +45,6 @@ function answer(choice) {
         prompt: props.question.prompt,
         correct_answer: props.question.correct_answer,
         choice,
-        insight_id: props.question.insight_id || null,
     }).post(appPath('/home/quiz/answer'));
 }
 

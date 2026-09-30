@@ -59,6 +59,7 @@ Route::name('user.')->middleware(\App\Http\Middleware\DetectFlcMobileApp::class)
             Route::get('media/{mediaItem}/audio', [MediaController::class, 'audio'])->name('media.audio');
             Route::get('media/{mediaItem}', [MediaController::class, 'show'])->name('media.show');
             Route::put('media/{mediaItem}/transcript', [MediaController::class, 'updateTranscript'])->name('media.transcript');
+            Route::delete('media/{mediaItem}', [MediaController::class, 'destroy'])->name('media.destroy');
 
             Route::get('quiz', [QuizController::class, 'index'])->name('quiz');
             Route::get('quiz/play', [QuizController::class, 'play'])->name('quiz.play');

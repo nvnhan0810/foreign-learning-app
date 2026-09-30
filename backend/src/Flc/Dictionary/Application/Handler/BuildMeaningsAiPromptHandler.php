@@ -9,7 +9,6 @@ use Flc\Shared\Application\Query;
 use Flc\Shared\Application\QueryBus;
 use Flc\Shared\Application\QueryHandler;
 use Flc\Vocabulary\Application\Query\FindUserVocabularyByWord;
-use Flc\WordChat\Application\Query\ListLearningInsights;
 
 final class BuildMeaningsAiPromptHandler implements QueryHandler
 {
@@ -36,29 +35,15 @@ final class BuildMeaningsAiPromptHandler implements QueryHandler
             ? $query->meanings
             : $this->resolveCurrentMeanings($query->userId, $word);
 
-        $insights = [];
-        $learnerContext = [];
-        if ($query->includeInsights && $word !== '') {
-            $insights = $this->queries->ask(new ListLearningInsights(
-                userId: $query->userId,
-                word: $word,
-                limit: $query->insightsLimit,
-            ));
-            if (! is_array($insights)) {
-                $insights = [];
-            }
-            $learnerContext = $this->formatInsightsAsContext($insights);
-        }
-
         $normalized = DictionaryMeaningsEditor::toPromptMeaningsPayload($meanings);
 
         return [
             'word' => $word,
-            'prompt' => DictionaryMeaningsEditor::aiPrompt($word, $learnerContext, $normalized),
+            'prompt' => DictionaryMeaningsEditor::aiPrompt($word, [], $normalized),
             'current_meanings' => $normalized,
             'meanings_json' => DictionaryMeaningsEditor::toPrettyJson($normalized),
-            'learner_context' => $learnerContext,
-            'insights' => $insights,
+            'learner_context' => [],
+            'insights' => [],
         ];
     }
 
@@ -89,34 +74,5 @@ final class BuildMeaningsAiPromptHandler implements QueryHandler
         $meanings = $dictionary['meanings'] ?? [];
 
         return is_array($meanings) ? $meanings : [];
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $insights
-     * @return list<string>
-     */
-    private function formatInsightsAsContext(array $insights): array
-    {
-        $notes = [];
-        foreach ($insights as $insight) {
-            if (! is_array($insight)) {
-                continue;
-            }
-
-            $type = trim((string) ($insight['insight_type'] ?? 'note'));
-            $content = trim((string) ($insight['content'] ?? ''));
-            if ($content === '') {
-                continue;
-            }
-
-            $question = trim((string) ($insight['question'] ?? ''));
-            $line = '['.$type.'] '.$content;
-            if ($question !== '') {
-                $line .= ' (Q: '.$question.')';
-            }
-            $notes[] = $line;
-        }
-
-        return $notes;
     }
 }

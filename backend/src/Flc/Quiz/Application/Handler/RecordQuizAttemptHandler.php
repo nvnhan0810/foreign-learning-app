@@ -7,7 +7,6 @@ use Flc\Quiz\Application\Repository\QuizAttemptRepository;
 use Flc\Shared\Application\Command;
 use Flc\Shared\Application\CommandHandler;
 use Flc\Vocabulary\Application\Repository\UserVocabularyRepository;
-use Flc\WordChat\Application\LearningInsightRepository;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 final class RecordQuizAttemptHandler implements CommandHandler
@@ -15,7 +14,6 @@ final class RecordQuizAttemptHandler implements CommandHandler
     public function __construct(
         private readonly UserVocabularyRepository $vocabularies,
         private readonly QuizAttemptRepository $attempts,
-        private readonly LearningInsightRepository $insights,
     ) {}
 
     public function handle(Command $command): mixed
@@ -34,13 +32,6 @@ final class RecordQuizAttemptHandler implements CommandHandler
             $command->questionType,
             $command->correct,
         );
-
-        if ($command->insightId !== null) {
-            $insight = $this->insights->findForUser($command->userId, $command->insightId);
-            if ($insight !== null) {
-                $this->insights->incrementQuizUsage($command->insightId);
-            }
-        }
 
         return [
             'vocabulary_id' => $command->vocabularyId,

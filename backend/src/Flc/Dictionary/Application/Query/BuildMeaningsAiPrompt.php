@@ -18,7 +18,5 @@ final class BuildMeaningsAiPrompt implements Query
         public readonly int $userId,
         public readonly string $word,
         public readonly ?array $meanings = null,
-        public readonly bool $includeInsights = true,
-        public readonly int $insightsLimit = 30,
     ) {}
 }

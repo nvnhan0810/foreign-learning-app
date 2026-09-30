@@ -92,7 +92,7 @@ final class DictionaryEntry
         if ($meanings === []) {
             return [[
                 'part_of_speech' => null,
-                'definition' => 'Saved from Word Chat.',
+                'definition' => 'No definition yet.',
                 'examples' => $newExamples,
                 'synonyms' => [],
                 'antonyms' => [],

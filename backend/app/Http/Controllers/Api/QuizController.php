@@ -20,13 +20,11 @@ class QuizController extends Controller
     public function next(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'insight_id' => ['nullable', 'integer', 'min:1'],
             'vocabulary_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $question = $this->queries->ask(new GetNextQuizQuestion(
             userId: $request->user()->id,
-            insightId: isset($data['insight_id']) ? (int) $data['insight_id'] : null,
             vocabularyId: isset($data['vocabulary_id']) ? (int) $data['vocabulary_id'] : null,
         ));
 
@@ -45,7 +43,6 @@ class QuizController extends Controller
             'vocabulary_id' => ['required', 'exists:vocabularies,id'],
             'question_type' => ['required', 'string', 'max:40'],
             'correct' => ['required', 'boolean'],
-            'insight_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $result = $this->commands->dispatch(new RecordQuizAttempt(
@@ -53,7 +50,6 @@ class QuizController extends Controller
             vocabularyId: (int) $data['vocabulary_id'],
             questionType: $data['question_type'],
             correct: (bool) $data['correct'],
-            insightId: isset($data['insight_id']) ? (int) $data['insight_id'] : null,
         ));
 
         return response()->json(['data' => $result]);

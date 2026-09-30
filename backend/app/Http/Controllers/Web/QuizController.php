@@ -56,7 +56,6 @@ class QuizController extends Controller
 
         $question = $this->queries->ask(new GetNextQuizQuestion(
             userId: $request->user()->id,
-            insightId: $request->query('insight_id') ? (int) $request->query('insight_id') : null,
             vocabularyId: $request->query('vocabulary_id') ? (int) $request->query('vocabulary_id') : null,
         ));
 
@@ -84,7 +83,6 @@ class QuizController extends Controller
             'prompt' => ['required', 'string'],
             'correct_answer' => ['required', 'string'],
             'choice' => ['required', 'string'],
-            'insight_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $correct = strtolower(trim($data['choice'])) === strtolower(trim($data['correct_answer']));
@@ -94,7 +92,6 @@ class QuizController extends Controller
             vocabularyId: (int) $data['vocabulary_id'],
             questionType: $data['question_type'],
             correct: $correct,
-            insightId: isset($data['insight_id']) ? (int) $data['insight_id'] : null,
         ));
 
         if ($correct) {
@@ -109,7 +106,6 @@ class QuizController extends Controller
 
         $question = [
             'vocabulary_id' => (int) $data['vocabulary_id'],
-            'insight_id' => isset($data['insight_id']) ? (int) $data['insight_id'] : null,
             'question_type' => $data['question_type'],
             'prompt' => $data['prompt'],
             'options' => session('quiz_question')['options'] ?? [],

@@ -5,9 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessMediaContentJob;
 use App\Models\MediaItem;
-use Flc\Listening\Application\Query\GetListeningSessionOptions;
 use Flc\Media\Infrastructure\External\YouTubePreviewService;
-use Flc\Shared\Application\QueryBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +17,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class MediaController extends Controller
 {
     public function __construct(
-        private readonly QueryBus $queries,
         private readonly YouTubePreviewService $youtubePreview,
     ) {}
 
@@ -105,8 +102,6 @@ class MediaController extends Controller
             abort(403);
         }
 
-        $options = $this->queries->ask(new GetListeningSessionOptions($mediaItem->id));
-
         return Inertia::render('Media/Show', [
             'item' => [
                 'id' => $mediaItem->id,
@@ -119,10 +114,7 @@ class MediaController extends Controller
                 'difficulty_label' => $mediaItem->difficultyLabel(),
                 'transcript' => $mediaItem->transcript,
                 'analysis_status' => $mediaItem->analysis_status,
-                'question_bank_status' => $mediaItem->question_bank_status,
-                'question_bank_count' => $mediaItem->question_bank_count,
             ],
-            'listeningOptions' => is_array($options) ? $options : [],
         ]);
     }
 
@@ -176,5 +168,22 @@ class MediaController extends Controller
         }
 
         return $disk->response($mediaItem->audio_path);
+    }
+
+    public function destroy(Request $request, MediaItem $mediaItem): RedirectResponse
+    {
+        if ($mediaItem->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        if ($mediaItem->audio_path) {
+            Storage::disk($mediaItem->audio_disk)->delete($mediaItem->audio_path);
+        }
+
+        $mediaItem->delete();
+
+        return redirect()
+            ->route('user.home.media')
+            ->with('success', 'Media removed.');
     }
 }

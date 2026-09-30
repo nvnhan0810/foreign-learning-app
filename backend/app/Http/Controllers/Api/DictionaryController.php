@@ -41,14 +41,12 @@ class DictionaryController extends Controller
         $data = $request->validate([
             'word' => ['required', 'string', 'max:120'],
             'meanings' => ['nullable', 'array'],
-            'include_insights' => ['nullable', 'boolean'],
         ]);
 
         $result = $this->queries->ask(new BuildMeaningsAiPrompt(
             userId: (int) $request->user()->id,
             word: (string) $data['word'],
             meanings: isset($data['meanings']) && is_array($data['meanings']) ? $data['meanings'] : null,
-            includeInsights: (bool) ($data['include_insights'] ?? true),
         ));
 
         return response()->json(['data' => $result]);

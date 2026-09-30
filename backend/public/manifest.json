@@ -1,7 +1,7 @@
 {
   "name": "FLC — Foreign Language Companion",
   "short_name": "FLC",
-  "description": "Học tiếng Anh: tra từ Anh–Anh, Learn chat, từ vựng, luyện nghe, quiz và nhắc ôn tập.",
+  "description": "Học tiếng Anh: tra từ Anh–Anh, từ vựng, luyện nghe, quiz và nhắc ôn tập.",
   "lang": "vi",
   "start_url": "/",
   "scope": "/",

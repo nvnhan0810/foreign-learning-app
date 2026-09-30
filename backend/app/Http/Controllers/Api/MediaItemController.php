@@ -10,6 +10,7 @@ use Flc\Media\Infrastructure\External\YouTubeUrlParser;
 use Flc\Media\Infrastructure\Scheduling\MediaScheduleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MediaItemController extends Controller
 {
@@ -103,6 +104,11 @@ class MediaItemController extends Controller
     public function destroy(Request $request, MediaItem $mediaItem): JsonResponse
     {
         $this->authorizeMedia($request, $mediaItem);
+
+        if ($mediaItem->audio_path) {
+            Storage::disk($mediaItem->audio_disk)->delete($mediaItem->audio_path);
+        }
+
         $mediaItem->delete();
 
         return response()->json(['message' => 'Đã xóa media.']);

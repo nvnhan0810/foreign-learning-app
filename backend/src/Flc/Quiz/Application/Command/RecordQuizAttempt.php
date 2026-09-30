@@ -11,6 +11,5 @@ final class RecordQuizAttempt implements Command
         public readonly int $vocabularyId,
         public readonly string $questionType,
         public readonly bool $correct,
-        public readonly ?int $insightId = null,
     ) {}
 }

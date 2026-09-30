@@ -10,7 +10,7 @@ export function appPath(path) {
     return normalizePath(path);
 }
 
-/** Accepts `/api/...` or `/word-chat/...` → `/api/...` */
+/** Accepts `/api/...` paths → `/api/...` */
 export function apiPath(path) {
     const normalized = normalizePath(path);
     if (normalized.startsWith('/api/')) {
