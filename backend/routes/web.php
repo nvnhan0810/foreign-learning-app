@@ -35,10 +35,16 @@ Route::name('user.')->middleware(\App\Http\Middleware\DetectFlcMobileApp::class)
     Route::get('login', [UserAuthController::class, 'showLogin'])->name('login');
     Route::get('auth/sso', [UserAuthController::class, 'redirectSso'])->name('auth.sso');
     Route::get('auth/sso/callback', [UserAuthController::class, 'callbackSso'])->name('auth.sso.callback');
+    // FLC mobile WebView handoff (legacy param: code)
     Route::get('auth/webview-handoff', [UserAuthController::class, 'webviewHandoff'])->name('auth.webview.handoff');
+    // Apple Reader / external WebView bridge (param: ticket)
+    Route::get('auth/bridge/consume', [UserAuthController::class, 'webviewHandoff'])->name('auth.bridge.consume');
 
     Route::middleware('auth')->group(function () {
         Route::post('logout', [UserAuthController::class, 'logout'])->name('logout');
+
+        // Short alias for Apple Reader / embeds: /lookup?q=word
+        Route::get('lookup', [LookupController::class, 'index'])->name('lookup');
 
         Route::prefix('home')->name('home.')->group(function () {
             Route::get('lookup', [LookupController::class, 'index'])->name('lookup');

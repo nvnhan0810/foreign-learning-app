@@ -25,7 +25,9 @@ Route::post('/auth/sso/exchange', [SsoAuthController::class, 'exchange']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    // One-time WebView session ticket (FLC mobile + Apple Reader bridge)
     Route::post('/auth/webview-session', [WebviewSessionController::class, 'store']);
+    Route::post('/auth/bridge/ticket', [WebviewSessionController::class, 'store']);
     Route::get('/profile', [ProfileController::class, 'show']);
 
     Route::post('/me/push-token', [DevicePushTokenController::class, 'store']);

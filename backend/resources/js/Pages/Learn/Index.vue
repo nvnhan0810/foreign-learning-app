@@ -43,6 +43,10 @@ const props = withDefaults(
         saved?: boolean;
         savedVocabularyId?: number | string | null;
         draft?: boolean;
+        /** Trimmed `q` from the URL when present (Apple Reader / deep link). */
+        queryWord?: string;
+        /** Optional language pair hint (reserved; not used by dictionary yet). */
+        lang?: string | null;
     }>(),
     {
         word: '',
@@ -50,6 +54,8 @@ const props = withDefaults(
         saved: false,
         savedVocabularyId: null,
         draft: false,
+        queryWord: '',
+        lang: null,
     },
 );
 
@@ -61,6 +67,7 @@ const activeResult = ref<DictionaryLookupResult | null>(props.result);
 const isDraft = ref<boolean>(props.draft);
 const isSaved = ref<boolean>(props.saved);
 const savedVocabularyId = ref<number | string | null>(props.savedVocabularyId);
+const searchInputRef = ref<HTMLInputElement | null>(null);
 
 const meaningsViewMode = ref<MeaningsViewMode>(MeaningsViewMode.Ui);
 const jsonText = ref<string>('[]');
@@ -72,6 +79,8 @@ const copyPromptLabel = ref<string>('Copy prompt');
 const copyPromptBusy = ref<boolean>(false);
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 let skipNextPersist = false;
+/** Prevents double auto-search if Vue remounts with the same queryWord. */
+let lastAutoSearchKey: string | null = null;
 
 const saveForm = useForm<{
     word: string;
@@ -84,10 +93,17 @@ const saveForm = useForm<{
 });
 
 onMounted((): void => {
-    if (props.result) {
+    // Server already resolved `?q=` into props — do not overlay a stale local session.
+    if (props.result || (props.queryWord ?? '').trim() !== '') {
+        if ((props.queryWord ?? '').trim() !== '') {
+            lastAutoSearchKey = props.queryWord.trim().toLowerCase();
+        }
         return;
     }
     restoreFromSession();
+    queueMicrotask((): void => {
+        searchInputRef.value?.focus();
+    });
 });
 
 watch(
@@ -96,6 +112,26 @@ watch(
         if (value) {
             searchForm.word = value;
         }
+    },
+);
+
+/**
+ * Inertia client navigations that change `?q=` (same page component) should
+ * re-sync results. Server performs the lookup; we only avoid restoring session
+ * over a fresh query and skip duplicate work for the same key.
+ */
+watch(
+    () => (props.queryWord ?? '').trim(),
+    (queryWord: string): void => {
+        if (queryWord === '') {
+            return;
+        }
+        const key = queryWord.toLowerCase();
+        if (lastAutoSearchKey === key && props.result) {
+            return;
+        }
+        lastAutoSearchKey = key;
+        searchForm.word = props.word || queryWord;
     },
 );
 
@@ -282,6 +318,7 @@ function submitSearch(): void {
 }
 
 function clearWord(): void {
+    lastAutoSearchKey = null;
     searchForm.word = '';
     activeResult.value = null;
     isDraft.value = false;
@@ -294,6 +331,9 @@ function clearWord(): void {
     meaningsViewMode.value = MeaningsViewMode.Ui;
     jsonError.value = '';
     clearLookupSession();
+    queueMicrotask((): void => {
+        searchInputRef.value?.focus();
+    });
 }
 
 async function pronounce(): Promise<void> {
@@ -422,6 +462,7 @@ const saveButtonLabel = computed((): string => (isSaved.value ? 'Update JSON' : 
             <div class="form-group">
                 <div class="input-with-clear">
                     <input
+                        ref="searchInputRef"
                         v-model="searchForm.word"
                         type="text"
                         name="word"
@@ -429,7 +470,7 @@ const saveButtonLabel = computed((): string => (isSaved.value ? 'Update JSON' : 
                         placeholder="Type or paste a word..."
                         autocomplete="off"
                         enterkeyhint="search"
-                        autofocus
+                        :autofocus="!(queryWord || '').trim()"
                     >
                     <button
                         v-show="searchForm.word"

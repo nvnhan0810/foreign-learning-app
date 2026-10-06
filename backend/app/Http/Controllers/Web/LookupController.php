@@ -25,14 +25,48 @@ class LookupController extends Controller
     public function index(Request $request): Response
     {
         $prefill = trim((string) $request->query('q', ''));
+        // `lang` reserved for future language-pair support (e.g. en-vi).
+        $lang = trim((string) $request->query('lang', ''));
 
-        return Inertia::render('Learn/Index', [
-            'result' => session('lookup_result'),
-            'word' => old('word', session('lookup_word', $prefill)),
-            'saved' => (bool) session('lookup_saved', false),
-            'savedVocabularyId' => session('lookup_saved_vocabulary_id'),
-            'draft' => (bool) session('lookup_draft', false),
-        ]);
+        $flashResult = session('lookup_result');
+        $hasFlash = session()->has('lookup_result') || session()->has('lookup_word');
+
+        if ($hasFlash) {
+            return $this->renderPage(
+                word: old('word', session('lookup_word', $prefill)),
+                result: is_array($flashResult) ? $flashResult : null,
+                saved: (bool) session('lookup_saved', false),
+                savedVocabularyId: session('lookup_saved_vocabulary_id'),
+                draft: (bool) session('lookup_draft', false),
+                queryWord: $prefill,
+                lang: $lang !== '' ? $lang : null,
+            );
+        }
+
+        if ($prefill !== '') {
+            $normalized = Text::lower(preg_replace('/\s+/', ' ', $prefill) ?? $prefill);
+
+            if (preg_match('/^[a-z][a-z\s\'-]*$/i', $normalized)) {
+                return $this->renderForWord(
+                    $request,
+                    $normalized,
+                    $prefill,
+                    preferDetail: false,
+                    queryWord: $prefill,
+                    lang: $lang !== '' ? $lang : null,
+                );
+            }
+        }
+
+        return $this->renderPage(
+            word: $prefill,
+            result: null,
+            saved: false,
+            savedVocabularyId: null,
+            draft: false,
+            queryWord: $prefill,
+            lang: $lang !== '' ? $lang : null,
+        );
     }
 
     public function lookup(Request $request): RedirectResponse
@@ -197,6 +231,78 @@ class LookupController extends Controller
             ->with('lookup_draft', false)
             ->with('lookup_saved', is_array($savedVocab))
             ->with('lookup_saved_vocabulary_id', is_array($savedVocab) ? ($savedVocab['id'] ?? null) : null);
+    }
+
+    /**
+     * Resolve a word and render the lookup page (used for `?q=` auto-search).
+     */
+    private function renderForWord(
+        Request $request,
+        string $normalizedWord,
+        string $displayWord,
+        bool $preferDetail,
+        string $queryWord,
+        ?string $lang,
+    ): Response|RedirectResponse {
+        /** @var array<string, mixed>|null $savedVocab */
+        $savedVocab = $this->queries->ask(new FindUserVocabularyByWord(
+            userId: (int) $request->user()->id,
+            word: $normalizedWord,
+        ));
+
+        if ($preferDetail && is_array($savedVocab) && ! empty($savedVocab['id'])) {
+            return redirect()->route('user.home.vocab.show', $savedVocab['id']);
+        }
+
+        $result = $this->queries->ask(new LookupWord($normalizedWord));
+        $draft = false;
+
+        if (! $result) {
+            $draft = true;
+            $result = [
+                'word' => $normalizedWord,
+                'phonetic' => null,
+                'audio_url' => null,
+                'meanings' => [],
+                'synonyms' => [],
+                'antonyms' => [],
+                'source' => null,
+                'curated' => false,
+            ];
+        }
+
+        return $this->renderPage(
+            word: $displayWord,
+            result: $result,
+            saved: is_array($savedVocab),
+            savedVocabularyId: is_array($savedVocab) ? ($savedVocab['id'] ?? null) : null,
+            draft: $draft,
+            queryWord: $queryWord,
+            lang: $lang,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $result
+     */
+    private function renderPage(
+        string $word,
+        ?array $result,
+        bool $saved,
+        mixed $savedVocabularyId,
+        bool $draft,
+        string $queryWord,
+        ?string $lang,
+    ): Response {
+        return Inertia::render('Learn/Index', [
+            'result' => $result,
+            'word' => $word,
+            'saved' => $saved,
+            'savedVocabularyId' => $savedVocabularyId,
+            'draft' => $draft,
+            'queryWord' => $queryWord,
+            'lang' => $lang,
+        ]);
     }
 
     public function pronounce(Request $request, string $word): JsonResponse|RedirectResponse
