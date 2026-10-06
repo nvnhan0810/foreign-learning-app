@@ -47,6 +47,8 @@ const props = withDefaults(
         queryWord?: string;
         /** Optional language pair hint (reserved; not used by dictionary yet). */
         lang?: string | null;
+        /** Slim WebView sheet: no nav/header, compact actions only. */
+        embed?: boolean;
     }>(),
     {
         word: '',
@@ -56,6 +58,7 @@ const props = withDefaults(
         draft: false,
         queryWord: '',
         lang: null,
+        embed: false,
     },
 );
 
@@ -86,11 +89,21 @@ const saveForm = useForm<{
     word: string;
     phonetic: string;
     meanings: SaveMeaningPayload[];
+    embed: boolean;
 }>({
     word: '',
     phonetic: '',
     meanings: [],
+    embed: false,
 });
+
+const isEmbed = computed((): boolean => props.embed === true);
+const lookupAction = computed((): string =>
+    isEmbed.value ? appPath('/lookup') : appPath('/home/lookup'),
+);
+const saveAction = computed((): string =>
+    isEmbed.value ? appPath('/lookup/save') : appPath('/home/lookup/save'),
+);
 
 onMounted((): void => {
     // Server already resolved `?q=` into props — do not overlay a stale local session.
@@ -314,7 +327,12 @@ function persistSession(): void {
 }
 
 function submitSearch(): void {
-    searchForm.post(appPath('/home/lookup'));
+    searchForm
+        .transform((data) => ({
+            ...data,
+            embed: isEmbed.value,
+        }))
+        .post(lookupAction.value);
 }
 
 function clearWord(): void {
@@ -446,7 +464,8 @@ function submitSave(): void {
         synonyms: meaning.synonyms,
         antonyms: meaning.antonyms,
     }));
-    saveForm.post(appPath('/home/lookup/save'));
+    saveForm.embed = isEmbed.value;
+    saveForm.post(saveAction.value);
 }
 
 const isJsonMode = computed((): boolean => meaningsViewMode.value === MeaningsViewMode.Json);
@@ -455,133 +474,142 @@ const saveButtonLabel = computed((): string => (isSaved.value ? 'Update JSON' : 
 </script>
 
 <template>
-    <Head title="Lookup" />
-    <AppLayout title="Lookup" heading="Lookup">
-
-        <form class="flc-form-submit" @submit.prevent="submitSearch">
-            <div class="form-group">
-                <div class="input-with-clear">
-                    <input
-                        ref="searchInputRef"
-                        v-model="searchForm.word"
-                        type="text"
-                        name="word"
-                        class="form-control"
-                        placeholder="Type or paste a word..."
-                        autocomplete="off"
-                        enterkeyhint="search"
-                        :autofocus="!(queryWord || '').trim()"
-                    >
-                    <button
-                        v-show="searchForm.word"
-                        type="button"
-                        class="input-clear"
-                        aria-label="Clear"
-                        @click="clearWord"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                            <path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-block" :disabled="searchForm.processing">Look up</button>
-        </form>
-
-        <div v-if="activeResult" class="lookup-result-panel" style="margin-top:20px">
-            <div class="card">
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                    <p class="card-title" style="margin:0">{{ activeResult.word }}</p>
-                    <button
-                        v-if="activeResult.audio_url"
-                        type="button"
-                        class="btn btn-secondary btn-sm"
-                        title="Pronounce"
-                        aria-label="Pronounce"
-                        @click="pronounce"
-                    >🔊</button>
-                </div>
-                <p
-                    v-if="activeResult.phonetic"
-                    class="card-subtitle"
-                    style="font-style:italic;margin-top:6px"
-                >{{ activeResult.phonetic }}</p>
-
-                <p v-if="isDraft" class="muted" style="margin-top:10px">
-                    No dictionary entry yet. Add meanings with JSON or Copy prompt.
-                </p>
-
-                <div class="meanings-header">
-                    <div class="meanings-mode-toggle" role="group" aria-label="Meanings view">
+    <Head :title="isEmbed ? 'Dictionary' : 'Lookup'" />
+    <AppLayout
+        title="Lookup"
+        heading="Lookup"
+        :hide-nav="isEmbed"
+        :hide-header="isEmbed"
+        :disable-pull-to-refresh="isEmbed"
+    >
+        <div class="lookup-page" :class="{ 'lookup-embed': isEmbed }">
+            <form class="flc-form-submit lookup-search" @submit.prevent="submitSearch">
+                <div class="form-group lookup-search-group">
+                    <div class="input-with-clear">
+                        <input
+                            ref="searchInputRef"
+                            v-model="searchForm.word"
+                            type="text"
+                            name="word"
+                            class="form-control"
+                            placeholder="Type or paste a word..."
+                            autocomplete="off"
+                            enterkeyhint="search"
+                            :autofocus="!(queryWord || '').trim()"
+                        >
                         <button
+                            v-show="searchForm.word"
                             type="button"
-                            class="btn btn-sm"
-                            :class="{ 'btn-secondary': isJsonMode }"
-                            :aria-pressed="!isJsonMode"
-                            @click="setMeaningsViewMode(MeaningsViewMode.Ui)"
-                        >UI</button>
-                        <button
-                            type="button"
-                            class="btn btn-sm"
-                            :class="{ 'btn-secondary': !isJsonMode }"
-                            :aria-pressed="isJsonMode"
-                            @click="setMeaningsViewMode(MeaningsViewMode.Json)"
-                        >JSON</button>
+                            class="input-clear"
+                            aria-label="Clear"
+                            @click="clearWord"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
                     </div>
-                    <button
-                        type="button"
-                        class="btn btn-secondary btn-sm"
-                        :disabled="copyPromptBusy"
-                        @click="copyMeaningsPrompt"
-                    >{{ copyPromptLabel }}</button>
                 </div>
-
-                <DictionaryEntry
-                    v-show="!isJsonMode"
-                    :meanings="localMeanings"
-                    :synonyms="localSynonyms"
-                    :antonyms="localAntonyms"
-                    :prefer-detail="false"
-                />
-
-                <div v-show="isJsonMode" class="lookup-json-wrap">
-                    <textarea
-                        v-model="jsonText"
-                        class="form-control lookup-json-input"
-                        rows="12"
-                        spellcheck="false"
-                        placeholder='[{"part_of_speech":"noun","definition":"...","examples":[],"synonyms":[],"antonyms":[]}]'
-                    />
-                    <p class="muted" style="margin:0;font-size:12px">
-                        Paste AI JSON here, then Update JSON / Save word.
-                    </p>
-                </div>
-            </div>
-
-            <p v-if="jsonError" class="alert alert-error" style="margin-top:12px">
-                {{ jsonError }}
-            </p>
-
-            <form
-                v-if="canSave"
-                style="margin-top:12px"
-                @submit.prevent="submitSave"
-            >
-                <button
-                    type="submit"
-                    class="btn btn-secondary btn-block"
-                    :disabled="saveForm.processing"
-                >
-                    {{ saveButtonLabel }}
+                <button type="submit" class="btn btn-block" :disabled="searchForm.processing">
+                    {{ searchForm.processing ? 'Looking up…' : 'Look up' }}
                 </button>
             </form>
 
-            <p v-if="isSaved" class="muted" style="text-align:center;margin-top:12px">
-                Saved
-                <template v-if="savedVocabularyId">
-                    · <Link :href="`/home/vocab/${savedVocabularyId}`">View detail</Link>
-                </template>
-            </p>
+            <div v-if="activeResult" class="lookup-result-panel">
+                <div class="card lookup-result-card">
+                    <div class="lookup-word-row">
+                        <p class="card-title lookup-word-title">{{ activeResult.word }}</p>
+                        <button
+                            v-if="activeResult.audio_url"
+                            type="button"
+                            class="btn btn-secondary btn-sm"
+                            title="Pronounce"
+                            aria-label="Pronounce"
+                            @click="pronounce"
+                        >🔊</button>
+                    </div>
+                    <p
+                        v-if="activeResult.phonetic"
+                        class="card-subtitle lookup-phonetic"
+                    >{{ activeResult.phonetic }}</p>
+
+                    <p v-if="isDraft" class="muted lookup-draft-hint">
+                        No dictionary entry yet. Add meanings with JSON or Copy prompt.
+                    </p>
+
+                    <div class="meanings-header">
+                        <div class="meanings-mode-toggle" role="group" aria-label="Meanings view">
+                            <button
+                                type="button"
+                                class="btn btn-sm"
+                                :class="{ 'btn-secondary': isJsonMode }"
+                                :aria-pressed="!isJsonMode"
+                                @click="setMeaningsViewMode(MeaningsViewMode.Ui)"
+                            >UI</button>
+                            <button
+                                type="button"
+                                class="btn btn-sm"
+                                :class="{ 'btn-secondary': !isJsonMode }"
+                                :aria-pressed="isJsonMode"
+                                @click="setMeaningsViewMode(MeaningsViewMode.Json)"
+                            >JSON</button>
+                        </div>
+                        <button
+                            type="button"
+                            class="btn btn-secondary btn-sm"
+                            :disabled="copyPromptBusy"
+                            @click="copyMeaningsPrompt"
+                        >{{ copyPromptLabel }}</button>
+                    </div>
+
+                    <DictionaryEntry
+                        v-show="!isJsonMode"
+                        :meanings="localMeanings"
+                        :synonyms="localSynonyms"
+                        :antonyms="localAntonyms"
+                        :prefer-detail="false"
+                        :link-related="!isEmbed"
+                    />
+
+                    <div v-show="isJsonMode" class="lookup-json-wrap">
+                        <textarea
+                            v-model="jsonText"
+                            class="form-control lookup-json-input"
+                            :rows="isEmbed ? 10 : 12"
+                            spellcheck="false"
+                            placeholder='[{"part_of_speech":"noun","definition":"...","examples":[],"synonyms":[],"antonyms":[]}]'
+                        />
+                        <p class="muted lookup-json-hint">
+                            Paste AI JSON here, then Update JSON / Save word.
+                        </p>
+                    </div>
+                </div>
+
+                <p v-if="jsonError" class="alert alert-error lookup-json-error">
+                    {{ jsonError }}
+                </p>
+
+                <form
+                    v-if="canSave"
+                    class="lookup-save-form"
+                    @submit.prevent="submitSave"
+                >
+                    <button
+                        type="submit"
+                        class="btn btn-secondary btn-block"
+                        :disabled="saveForm.processing"
+                    >
+                        {{ saveButtonLabel }}
+                    </button>
+                </form>
+
+                <p v-if="isSaved" class="muted lookup-saved-status">
+                    Saved
+                    <template v-if="!isEmbed && savedVocabularyId">
+                        · <Link :href="`/home/vocab/${savedVocabularyId}`">View detail</Link>
+                    </template>
+                </p>
+            </div>
         </div>
     </AppLayout>
 </template>

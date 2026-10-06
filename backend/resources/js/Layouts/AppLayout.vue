@@ -12,6 +12,8 @@ const props = defineProps({
     gameScreen: { type: Boolean, default: false },
     gameBg: { type: Boolean, default: false },
     backHref: { type: String, default: null },
+    /** Disable pull-to-refresh (embed WebView sheets). */
+    disablePullToRefresh: { type: Boolean, default: false },
 });
 
 const slots = useSlots();
@@ -81,7 +83,7 @@ onUnmounted(() => {
 
 <template>
     <div class="user-shell">
-        <PullToRefresh :disabled="gameScreen" />
+        <PullToRefresh :disabled="gameScreen || disablePullToRefresh" />
 
         <template v-if="!hideHeader">
             <slot v-if="hasCustomHeader" name="header" />

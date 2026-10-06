@@ -9,6 +9,8 @@ const props = defineProps({
     antonyms: { type: Array, default: () => [] },
     extraExamples: { type: Array, default: () => [] },
     preferDetail: { type: Boolean, default: true },
+    /** When false, related words render as plain chips (embed WebView). */
+    linkRelated: { type: Boolean, default: true },
 });
 
 function cleanWords(list) {
@@ -83,24 +85,26 @@ const moreExamples = computed(() => {
                 <div v-if="meaning.synonyms.length" class="related-group">
                     <div class="related-label">Synonyms</div>
                     <div class="related-words">
-                        <Link
+                        <component
+                            :is="linkRelated ? Link : 'span'"
                             v-for="related in meaning.synonyms"
                             :key="`syn-${index}-${related}`"
-                            :href="relatedHref(related)"
+                            v-bind="linkRelated ? { href: relatedHref(related) } : {}"
                             class="related-word"
-                        >{{ related }}</Link>
+                        >{{ related }}</component>
                     </div>
                 </div>
 
                 <div v-if="meaning.antonyms.length" class="related-group">
                     <div class="related-label">Antonyms</div>
                     <div class="related-words">
-                        <Link
+                        <component
+                            :is="linkRelated ? Link : 'span'"
                             v-for="related in meaning.antonyms"
                             :key="`ant-${index}-${related}`"
-                            :href="relatedHref(related)"
+                            v-bind="linkRelated ? { href: relatedHref(related) } : {}"
                             class="related-word"
-                        >{{ related }}</Link>
+                        >{{ related }}</component>
                     </div>
                 </div>
             </div>
@@ -110,23 +114,25 @@ const moreExamples = computed(() => {
             <div v-if="entrySynonyms.length" class="related-group">
                 <div class="related-label">Synonyms</div>
                 <div class="related-words">
-                    <Link
+                    <component
+                        :is="linkRelated ? Link : 'span'"
                         v-for="related in entrySynonyms"
                         :key="`syn-${related}`"
-                        :href="relatedHref(related)"
+                        v-bind="linkRelated ? { href: relatedHref(related) } : {}"
                         class="related-word"
-                    >{{ related }}</Link>
+                    >{{ related }}</component>
                 </div>
             </div>
             <div v-if="entryAntonyms.length" class="related-group">
                 <div class="related-label">Antonyms</div>
                 <div class="related-words">
-                    <Link
+                    <component
+                        :is="linkRelated ? Link : 'span'"
                         v-for="related in entryAntonyms"
                         :key="`ant-${related}`"
-                        :href="relatedHref(related)"
+                        v-bind="linkRelated ? { href: relatedHref(related) } : {}"
                         class="related-word"
-                    >{{ related }}</Link>
+                    >{{ related }}</component>
                 </div>
             </div>
         </template>

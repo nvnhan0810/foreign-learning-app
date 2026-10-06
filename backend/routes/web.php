@@ -43,8 +43,10 @@ Route::name('user.')->middleware(\App\Http\Middleware\DetectFlcMobileApp::class)
     Route::middleware('auth')->group(function () {
         Route::post('logout', [UserAuthController::class, 'logout'])->name('logout');
 
-        // Short alias for Apple Reader / embeds: /lookup?q=word
+        // Embed sheet for Apple Reader / WebView: /lookup?q=word (no bottom nav)
         Route::get('lookup', [LookupController::class, 'index'])->name('lookup');
+        Route::post('lookup', [LookupController::class, 'lookup'])->name('lookup.search');
+        Route::post('lookup/save', [LookupController::class, 'save'])->name('lookup.save');
 
         Route::prefix('home')->name('home.')->group(function () {
             Route::get('lookup', [LookupController::class, 'index'])->name('lookup');

@@ -24,6 +24,7 @@ class LookupController extends Controller
 
     public function index(Request $request): Response
     {
+        $embed = $this->isEmbedRequest($request);
         $prefill = trim((string) $request->query('q', ''));
         // `lang` reserved for future language-pair support (e.g. en-vi).
         $lang = trim((string) $request->query('lang', ''));
@@ -40,6 +41,7 @@ class LookupController extends Controller
                 draft: (bool) session('lookup_draft', false),
                 queryWord: $prefill,
                 lang: $lang !== '' ? $lang : null,
+                embed: $embed,
             );
         }
 
@@ -54,6 +56,7 @@ class LookupController extends Controller
                     preferDetail: false,
                     queryWord: $prefill,
                     lang: $lang !== '' ? $lang : null,
+                    embed: $embed,
                 );
             }
         }
@@ -66,6 +69,7 @@ class LookupController extends Controller
             draft: false,
             queryWord: $prefill,
             lang: $lang !== '' ? $lang : null,
+            embed: $embed,
         );
     }
 
@@ -73,6 +77,7 @@ class LookupController extends Controller
     {
         $data = $request->validate([
             'word' => ['required', 'string', 'max:500'],
+            'embed' => ['sometimes', 'boolean'],
         ]);
 
         $text = trim($data['word']);
@@ -109,6 +114,7 @@ class LookupController extends Controller
             'word' => ['required', 'string', 'max:120'],
             'phonetic' => ['nullable', 'string', 'max:120'],
             'meanings' => ['nullable', 'array'],
+            'embed' => ['sometimes', 'boolean'],
         ]);
 
         $word = Text::lower(trim($data['word']));
@@ -122,19 +128,20 @@ class LookupController extends Controller
         ));
 
         if ($result === null) {
-            return $this->redirectToLookupAfterSave($data, 'Could not save word.');
+            return $this->redirectToLookupAfterSave($request, $data, 'Could not save word.');
         }
 
         if ($result['created'] ?? false) {
             $lookup = $this->queries->ask(new LookupWord($word));
 
-            return $this->redirectToLookupAfterSave($data, 'Word saved.', is_array($lookup) ? $lookup : null);
+            return $this->redirectToLookupAfterSave($request, $data, 'Word saved.', is_array($lookup) ? $lookup : null);
         }
 
         if ($result['content_updated'] ?? false) {
             $lookup = $this->queries->ask(new LookupWord($word));
 
             return $this->redirectToLookupAfterSave(
+                $request,
                 $data,
                 'Meanings updated.',
                 is_array($lookup) ? $lookup : null,
@@ -145,21 +152,26 @@ class LookupController extends Controller
             $lookup = $this->queries->ask(new LookupWord($word));
 
             return $this->redirectToLookupAfterSave(
+                $request,
                 $data,
                 'Updated synonyms and antonyms for this saved word.',
                 is_array($lookup) ? $lookup : null,
             );
         }
 
-        return $this->redirectToLookupAfterSave($data, 'This word is already in your list.');
+        return $this->redirectToLookupAfterSave($request, $data, 'This word is already in your list.');
     }
 
     /**
      * @param  array{word: string, phonetic?: string|null, meanings?: array<int, mixed>|null}  $data
      * @param  array<string, mixed>|null  $lookup
      */
-    private function redirectToLookupAfterSave(array $data, string $message, ?array $lookup = null): RedirectResponse
-    {
+    private function redirectToLookupAfterSave(
+        Request $request,
+        array $data,
+        string $message,
+        ?array $lookup = null,
+    ): RedirectResponse {
         $word = Text::lower(trim($data['word']));
         $lookup ??= $this->queries->ask(new LookupWord($word));
 
@@ -174,11 +186,11 @@ class LookupController extends Controller
 
         /** @var array<string, mixed>|null $savedVocab */
         $savedVocab = $this->queries->ask(new FindUserVocabularyByWord(
-            userId: (int) request()->user()->id,
+            userId: (int) $request->user()->id,
             word: $word,
         ));
 
-        return redirect()->route('user.home.lookup')
+        return redirect()->route($this->lookupRouteName($request))
             ->with('success', $message)
             ->with('lookup_saved', true)
             ->with('lookup_saved_vocabulary_id', is_array($savedVocab) ? ($savedVocab['id'] ?? null) : null)
@@ -199,7 +211,9 @@ class LookupController extends Controller
             word: $normalizedWord,
         ));
 
-        if ($preferDetail && is_array($savedVocab) && ! empty($savedVocab['id'])) {
+        $embed = $this->isEmbedRequest($request);
+
+        if (! $embed && $preferDetail && is_array($savedVocab) && ! empty($savedVocab['id'])) {
             return redirect()->route('user.home.vocab.show', $savedVocab['id']);
         }
 
@@ -217,7 +231,7 @@ class LookupController extends Controller
                 'curated' => false,
             ];
 
-            return redirect()->route('user.home.lookup')
+            return redirect()->route($this->lookupRouteName($request))
                 ->with('lookup_word', $displayWord)
                 ->with('lookup_result', $draft)
                 ->with('lookup_draft', true)
@@ -225,7 +239,7 @@ class LookupController extends Controller
                 ->with('lookup_saved_vocabulary_id', is_array($savedVocab) ? ($savedVocab['id'] ?? null) : null);
         }
 
-        return redirect()->route('user.home.lookup')
+        return redirect()->route($this->lookupRouteName($request))
             ->with('lookup_word', $displayWord)
             ->with('lookup_result', $result)
             ->with('lookup_draft', false)
@@ -243,6 +257,7 @@ class LookupController extends Controller
         bool $preferDetail,
         string $queryWord,
         ?string $lang,
+        bool $embed,
     ): Response|RedirectResponse {
         /** @var array<string, mixed>|null $savedVocab */
         $savedVocab = $this->queries->ask(new FindUserVocabularyByWord(
@@ -250,7 +265,7 @@ class LookupController extends Controller
             word: $normalizedWord,
         ));
 
-        if ($preferDetail && is_array($savedVocab) && ! empty($savedVocab['id'])) {
+        if (! $embed && $preferDetail && is_array($savedVocab) && ! empty($savedVocab['id'])) {
             return redirect()->route('user.home.vocab.show', $savedVocab['id']);
         }
 
@@ -279,6 +294,7 @@ class LookupController extends Controller
             draft: $draft,
             queryWord: $queryWord,
             lang: $lang,
+            embed: $embed,
         );
     }
 
@@ -293,6 +309,7 @@ class LookupController extends Controller
         bool $draft,
         string $queryWord,
         ?string $lang,
+        bool $embed,
     ): Response {
         return Inertia::render('Learn/Index', [
             'result' => $result,
@@ -302,7 +319,26 @@ class LookupController extends Controller
             'draft' => $draft,
             'queryWord' => $queryWord,
             'lang' => $lang,
+            'embed' => $embed,
         ]);
+    }
+
+    private function isEmbedRequest(Request $request): bool
+    {
+        if ($request->routeIs('user.lookup', 'user.lookup.search', 'user.lookup.save')) {
+            return true;
+        }
+
+        if ($request->boolean('embed')) {
+            return true;
+        }
+
+        return $request->query('embed') === '1';
+    }
+
+    private function lookupRouteName(Request $request): string
+    {
+        return $this->isEmbedRequest($request) ? 'user.lookup' : 'user.home.lookup';
     }
 
     public function pronounce(Request $request, string $word): JsonResponse|RedirectResponse
