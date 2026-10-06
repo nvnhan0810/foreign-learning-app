@@ -22,12 +22,13 @@ Route::get('/config', AppConfigController::class);
 Route::get('/auth/sso/redirect', [SsoAuthController::class, 'redirect']);
 Route::post('/auth/sso/exchange', [SsoAuthController::class, 'exchange']);
 
+// WebView session ticket — auth resolved inside controller (foreign Sanctum OR Index Reader bearer).
+Route::post('/auth/webview-session', [WebviewSessionController::class, 'store']);
+Route::post('/auth/bridge/ticket', [WebviewSessionController::class, 'store']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
-    // One-time WebView session ticket (FLC mobile + Apple Reader bridge)
-    Route::post('/auth/webview-session', [WebviewSessionController::class, 'store']);
-    Route::post('/auth/bridge/ticket', [WebviewSessionController::class, 'store']);
     Route::get('/profile', [ProfileController::class, 'show']);
 
     Route::post('/me/push-token', [DevicePushTokenController::class, 'store']);

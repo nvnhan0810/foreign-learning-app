@@ -4,32 +4,39 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Flc\Identity\Application\Query\IsEmailAllowed;
+use Flc\Identity\Infrastructure\Sso\IndexMeClient;
+use Flc\Shared\Application\QueryBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class WebviewSessionController extends Controller
 {
     private const CODE_TTL_SECONDS = 60;
 
+    public function __construct(
+        private readonly QueryBus $queries,
+        private readonly IndexMeClient $indexMe,
+    ) {}
+
     /**
      * Issue a one-time ticket that establishes a Laravel web session in a WebView.
      *
-     * Used by FLC mobile (`handoff_url`) and Apple Reader (`ticket` + `consume_url`).
+     * Accepts:
+     * - Foreign Sanctum bearer (FLC mobile / extension)
+     * - Index Reader Sanctum bearer (Apple Reader) via IdP /api/v1/me
      */
     public function store(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $this->resolveUser($request);
         if ($user === null) {
             abort(401);
-        }
-
-        // Agent / scoped tokens must not mint browser sessions.
-        if ($user->currentAccessToken() !== null && ! $user->tokenCan('*')) {
-            abort(403, 'WebView session requires a full app token.');
         }
 
         $data = $request->validate([
@@ -109,6 +116,47 @@ class WebviewSessionController extends Controller
     public static function cacheKey(string $code): string
     {
         return 'flc_webview_handoff:'.$code;
+    }
+
+    private function resolveUser(Request $request): ?User
+    {
+        $bearer = $request->bearerToken();
+        if ($bearer === null || $bearer === '') {
+            return null;
+        }
+
+        $local = PersonalAccessToken::findToken($bearer);
+        if ($local !== null) {
+            $tokenable = $local->tokenable;
+            if (! $tokenable instanceof User) {
+                return null;
+            }
+
+            // Agent / scoped tokens must not mint browser sessions.
+            if (! $local->can('*')) {
+                abort(403, 'WebView session requires a full app token.');
+            }
+
+            return $tokenable;
+        }
+
+        $claims = $this->indexMe->fetchMe($bearer);
+        if ($claims === null) {
+            return null;
+        }
+
+        if (! $this->queries->ask(new IsEmailAllowed($claims['email']))) {
+            abort(403, 'This email is not allowed. Contact an admin to add it to the allowlist.');
+        }
+
+        return User::query()->updateOrCreate(
+            ['email' => $claims['email']],
+            [
+                'name' => $claims['name'] !== '' ? $claims['name'] : Str::before($claims['email'], '@'),
+                'email_verified_at' => now(),
+                'password' => Hash::make(Str::random(64)),
+            ]
+        );
     }
 
     /**
