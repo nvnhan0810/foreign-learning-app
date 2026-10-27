@@ -1,4 +1,4 @@
-name: Publish Docker image
+name: Publish Go application image
 
 on:
   push:
@@ -8,6 +8,10 @@ on:
       - "v*"
   workflow_dispatch:
     inputs:
+      deploy:
+        description: "Deploy this Go release after database/configuration are prepared"
+        type: boolean
+        default: false
       deploy_only:
         description: "Skip build, only trigger deploy webhook"
         type: boolean
@@ -36,7 +40,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Detect .github / backend changes
+      - name: Detect application changes
         uses: dorny/paths-filter@v3
         id: filter
         if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v')
@@ -47,6 +51,8 @@ jobs:
             should_build:
               - '.github/**'
               - 'backend/**'
+              - 'frontend/**'
+              - 'Dockerfile'
 
       - name: Set build flag
         id: result
@@ -100,13 +106,11 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            APP_URL=https://foreign.nvnhan0810.com
           cache-from: type=gha,scope=foreign-learning-app-production
           cache-to: type=gha,mode=max,scope=foreign-learning-app-production
           provenance: false
@@ -116,7 +120,8 @@ jobs:
     needs: build-and-push
     if: >
       always()
-      && github.event_name != 'pull_request'
+      && github.event_name == 'workflow_dispatch'
+      && inputs.deploy == true
       && (
         needs.build-and-push.result == 'success'
         || (needs.build-and-push.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.deploy_only == true)

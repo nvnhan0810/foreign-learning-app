@@ -25,7 +25,7 @@ class FlcApi {
 
   Future<void> logout() => _client.post('/logout');
 
-  /// Mint a one-time URL that establishes a Laravel web session in the WebView.
+  /// Mint a one-time URL that establishes a native Go web session in the WebView.
   Future<String> mintWebviewHandoffUrl({String? next}) async {
     final json = await _client.post<Map<String, dynamic>>(
       '/auth/webview-session',

@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS user_notification_preferences(user_id bigint PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,vocab_quiz_push_enabled boolean NOT NULL DEFAULT true,created_at timestamp NOT NULL,updated_at timestamp NOT NULL);
+CREATE TABLE IF NOT EXISTS device_push_tokens(id bigserial PRIMARY KEY,user_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,token varchar(512) NOT NULL,platform varchar(16) NOT NULL,created_at timestamp NOT NULL,updated_at timestamp NOT NULL,UNIQUE(token));

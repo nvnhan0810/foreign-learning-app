@@ -1,0 +1,4 @@
+@import 'tailwindcss';
+@import './mobile.css';
+@import './responsive.css';
+@source '../**/*.vue';

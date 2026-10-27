@@ -1,0 +1,7 @@
+node_modules
+dist
+package-lock.json
+src/presentation/styles/mobile.css
+public
+test-results
+playwright-report

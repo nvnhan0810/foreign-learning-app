@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/vendor
+**/dist
+**/.env
+**/.env.*
+mobile
+extension
+
+backend/storage
+frontend/test-results
+frontend/playwright-report
+old-backend

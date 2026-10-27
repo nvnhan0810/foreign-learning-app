@@ -1,58 +1,33 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# FLC Go backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Standalone Go 1.26 + PostgreSQL. No PHP runtime, proxy, shared framework session, or `APP_KEY`.
 
-## About Laravel
+Build `frontend/` first when serving the UI from Go, or set `BACKEND_ONLY=true` for a separate frontend server.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```sh
+cp .env.example .env  # only if .env does not exist
+# Set DATABASE_URL, APP_URL, SSO_IDP_URL, SSO_SECRET and allowed emails.
+go run ./cmd/server -migrate
+go run ./cmd/server
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+`.env` is read as data; process environment variables take precedence. `ENV_FILE` selects another file. The migration command bootstraps a fresh database and adds Go tables to an imported PostgreSQL database without deleting user data. Run it deliberately against the intended database; startup never silently migrates production.
 
-## Contributing
+The public callback is `${APP_URL}/auth/sso/callback`, client `flc-web`. Mobile/extension use client `flc-mobile` through `/api/auth/sso/redirect` and `/api/auth/sso/exchange`. Go exchanges codes directly with the identity provider. Codes/states and WebView tickets are one-time, expire in PostgreSQL, and browser state is bound to an HttpOnly cookie. User admission combines the configured email patterns with active database patterns/settings.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Browser sessions use opaque random tokens; the server stores their SHA-256 digests. Production HTTPS uses `__Host-` cookies, HttpOnly/SameSite=Lax and a separate CSRF token for writes. Bearer tokens are stored hashed in `access_tokens`. Existing users/vocabulary/media remain usable after importing their database; users sign in again to obtain Go sessions/tokens.
 
-## Code of Conduct
+The server includes a durable PostgreSQL media worker. It fetches YouTube captions when available, generates questions through the optional Cursor service, and falls back to source-grounded local questions. Without captions or supplied transcript/notes it marks the job failed with an actionable message. Jobs retry up to three times, reclaim abandoned work and preserve questions belonging to unfinished assessments when a new bank is generated. Uploaded audio needs a transcript or notes; speech-to-text is not configured.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Listening sessions select 5/10/20 questions for quiz/test/exam. Answers are checked against stored questions. Repeated submissions return the existing attempt. Vocabulary quiz grades browser choices against server state, not client answer keys. Bearer clients may continue submitting their locally graded `correct` boolean for the issued question; this is a self-reported review result. Wordle, scramble, hangman and word search also run in Go.
 
-## Security Vulnerabilities
+`MEDIA_ROOT` owns uploaded audio; mount a persistent writable volume. Uploaded local files stream with range support after authorization. Other storage disks require moving their files under this root. Admin routes return 404. Push tokens/preferences are persisted; external FCM delivery is not part of the current user-flow implementation.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```sh
+go test -race ./...
+go vet ./...
+go build ./cmd/server
+TEST_DATABASE_URL='postgres://flc:test@localhost:5432/flc_test?sslmode=disable' go test -race ./...
+```
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Integration tests create and drop isolated schemas on the disposable test database. The native flow test starts a fake IdP and exercises authentication, CSRF, quiz, the media worker and listening submission; it never calls a production IdP.

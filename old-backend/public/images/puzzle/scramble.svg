@@ -1,0 +1,37 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="scr-bg" x1="0" y1="0" x2="400" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4361ee"/>
+      <stop offset="1" stop-color="#3a0ca3"/>
+    </linearGradient>
+    <linearGradient id="scr-tile" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e8edff"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" rx="24" fill="url(#scr-bg)"/>
+  <circle cx="330" cy="60" r="90" fill="#ffffff" opacity="0.06"/>
+  <circle cx="70" cy="250" r="70" fill="#ffffff" opacity="0.06"/>
+  <g font-family="system-ui, sans-serif" font-weight="900" font-size="52" fill="#3a0ca3" text-anchor="middle">
+    <g transform="translate(120 120) rotate(-12)">
+      <rect x="-38" y="-38" width="76" height="76" rx="16" fill="url(#scr-tile)"/>
+      <text x="0" y="18">A</text>
+    </g>
+    <g transform="translate(210 95) rotate(8)">
+      <rect x="-38" y="-38" width="76" height="76" rx="16" fill="url(#scr-tile)"/>
+      <text x="0" y="18">Z</text>
+    </g>
+    <g transform="translate(285 150) rotate(-6)">
+      <rect x="-38" y="-38" width="76" height="76" rx="16" fill="url(#scr-tile)"/>
+      <text x="0" y="18">Q</text>
+    </g>
+    <g transform="translate(160 200) rotate(14)">
+      <rect x="-38" y="-38" width="76" height="76" rx="16" fill="url(#scr-tile)"/>
+      <text x="0" y="18">R</text>
+    </g>
+    <g transform="translate(250 220) rotate(-10)">
+      <rect x="-38" y="-38" width="76" height="76" rx="16" fill="url(#scr-tile)"/>
+      <text x="0" y="18">M</text>
+    </g>
+  </g>
+</svg>

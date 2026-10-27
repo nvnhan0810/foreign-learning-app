@@ -1,0 +1,128 @@
+/* Mobile CSS is preserved byte-for-byte. Desktop overrides begin at 768px. */
+@media (min-width: 768px) {
+  .user-shell {
+    max-width: 1120px;
+  }
+  .user-main {
+    padding: 28px 32px 100px;
+    min-width: 0;
+  }
+  .user-header {
+    padding: 20px 32px;
+  }
+  .user-header h1 {
+    font-size: 20px;
+  }
+  .user-nav {
+    max-width: 1120px;
+  }
+  .user-nav a {
+    flex-direction: row;
+    gap: 10px;
+    font-size: 14px;
+  }
+  [data-vocab-list] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+  [data-vocab-list] .vocab-card {
+    margin: 0;
+  }
+  .media-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .stats-row {
+    gap: 20px;
+  }
+  .user-main > .lookup-page {
+    max-width: 800px;
+    margin-inline: auto;
+  }
+  .user-no-nav.user-no-header .user-main:has(.lookup-embed) {
+    max-width: 640px;
+    margin-inline: auto;
+  }
+  .user-game .user-shell {
+    max-width: 880px;
+    border-inline: 1px solid var(--border);
+  }
+  .user-game .puzzle-screen-body,
+  .user-game .puzzle-screen-scroll {
+    width: 100%;
+    max-width: 720px;
+    margin-inline: auto;
+  }
+}
+@media (min-width: 1024px) {
+  body.user-body:not(.user-no-nav) {
+    --desktop-rail: 216px;
+  }
+  body.user-body:not(.user-no-nav) .user-shell {
+    max-width: 1440px;
+    padding-left: var(--desktop-rail);
+  }
+  body.user-body:not(.user-no-nav) .user-nav {
+    position: fixed;
+    inset: 0 auto 0 max(0px, calc((100vw - 1440px) / 2));
+    transform: none;
+    width: var(--desktop-rail);
+    max-width: none;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 100px 16px 24px;
+    border-top: 0;
+    border-right: 1px solid var(--border);
+    box-shadow: none;
+  }
+  body.user-body:not(.user-no-nav) .user-nav::before {
+    content: '🌐  FLC';
+    position: absolute;
+    top: 30px;
+    left: 28px;
+    color: var(--text);
+    font-size: 24px;
+    font-weight: 750;
+  }
+  body.user-body:not(.user-no-nav) .user-nav a {
+    justify-content: flex-start;
+    padding: 14px 16px;
+    border-radius: 12px;
+  }
+  body.user-body:not(.user-no-nav) .user-nav a.active {
+    background: var(--primary-soft);
+  }
+  body.user-body:not(.user-no-nav) .user-main {
+    padding-bottom: 40px;
+  }
+  .user-shell:has(.media-show-page) {
+    max-width: 1440px;
+  }
+  .user-shell:has(.media-show-page) .user-nav {
+    max-width: none;
+  }
+  .media-show-page {
+    display: flex;
+  }
+  .media-show-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.85fr);
+    gap: 24px;
+    align-items: start;
+    height: 100%;
+  }
+  .media-show-main > .transcript-panel {
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+}
+@media (min-width: 1280px) {
+  [data-vocab-list] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

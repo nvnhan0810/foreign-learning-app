@@ -13,7 +13,7 @@ interface SsoExchangeResponse {
  * Chrome extension SSO — same flow as mobile:
  * 1) launchWebAuthFlow → /api/auth/sso/redirect (IdP: nvnhan0810.com / dev)
  * 2) callback with code + state
- * 3) POST /api/auth/sso/exchange → Sanctum token
+ * 3) POST /api/auth/sso/exchange → Go bearer token
  */
 export async function loginWithSso(): Promise<void> {
   const settings = await getSettings();

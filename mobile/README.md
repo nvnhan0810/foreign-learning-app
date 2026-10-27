@@ -1,10 +1,10 @@
 # FLC Mobile (Flutter)
 
-WebView shell cho FLC web app: đăng nhập Google native → handoff Sanctum → Laravel session → load UI Blade trong WebView.
+WebView shell cho FLC: đăng nhập SSO → Go bearer token → one-time handoff ticket → Go session → giao diện Vue trong WebView.
 
 ## Flow
 
-1. **Sign in with Google** (`flutter_web_auth_2` → `flc://oauth-callback`) → Sanctum token
+1. **Sign in with Google** (`flutter_web_auth_2` → `flc://oauth-callback`) → Go bearer token
 2. `POST /api/auth/webview-session` → one-time handoff URL
 3. WebView mở web app (UA `FLCApp/`, theme sync qua `flc_theme`)
 

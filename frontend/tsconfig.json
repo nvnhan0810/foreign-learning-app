@@ -1,0 +1,27 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/Components/*": ["src/presentation/Components/*"],
+      "@/Layouts/*": ["src/presentation/Layouts/*"]
+    },
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noEmit": true,
+    "allowJs": false,
+    "isolatedModules": true,
+    "types": ["vite/client", "node"],
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "vite.config.ts",
+    "tests/**/*.ts",
+    "playwright.config.ts",
+    "e2e/**/*.ts"
+  ]
+}
